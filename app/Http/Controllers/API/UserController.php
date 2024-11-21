@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Http\Controllers\API;
-
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
@@ -82,7 +80,7 @@ class UserController extends Controller
         ]);
 
         // Send registration email
-        Mail::to($user->email)->send(new RegisterMail($user));
+        // Mail::to($user->email)->send(new RegisterMail($user));
 
         return response()->json(['message' => 'User registered successfully!', 'user' => $user], 201);
     }
