@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\Api\JobController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,9 +22,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // send request from login form 
 Route::controller(UserController::class)->group(function () {
-    Route::post('login', 'userLogin');  
-    Route::post('register', 'register');  
+    Route::post('login', 'userLogin');
+    Route::post('register', 'register');
 });
+
+Route::post('jobs/store',[JobController::class,'store']);
+Route::get('jobs/show', [JobController::class, 'index']);
 
 
 // Routes for authenticated user details and logout, using auth:api middleware
