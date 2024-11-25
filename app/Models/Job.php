@@ -13,12 +13,21 @@ class Job extends Model
         'jobtitle',
         'email',
         'description',
-        'jobType',
-        'workLocation',
+        // 'jobType',
+        // 'workLocation',
         'subscribe',
         'image',
     ];
 
+    public function jobTypes()
+    {
+        return $this->hasMany(JobType::class);
+    }
+
+    public function workLocations()
+    {
+        return $this->hasMany(WorkLocation::class);
+    }
     protected $casts = [
         'jobType' => 'array',
         'workLocation' => 'array',

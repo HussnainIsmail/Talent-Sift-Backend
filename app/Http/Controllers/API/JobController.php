@@ -14,7 +14,10 @@ class JobController extends Controller
      */
     public function index()
     {
-        //
+        $jobs = Job::with('jobTypes', 'workLocations')->get();
+        return response()->json([
+            'jobs' => $jobs,
+        ], 200);
     }
 
     /**
@@ -32,7 +35,6 @@ class JobController extends Controller
     public function store(Request $request)
     {
         try {
-            // dd($request->all());
             // Validate request data
             $validated = $request->validate([
                 'jobtitle' => 'required|string|max:255',
@@ -46,7 +48,7 @@ class JobController extends Controller
                 'image' => 'nullable|image|max:10240',
             ]);
 
-            // Handle image upload and job creation
+            // Handle image upload
             $imagePath = null;
             if ($request->hasFile('image')) {
                 $imagePath = $request->file('image')->store('job_images', 'public');
@@ -57,22 +59,33 @@ class JobController extends Controller
                 'jobtitle' => $validated['jobtitle'],
                 'email' => $validated['email'],
                 'description' => $validated['description'],
-                'jobType' => $validated['jobType'] ?? [],
-                'workLocation' => $validated['workLocation'] ?? [],
                 'subscribe' => $validated['subscribe'] ?? 0,
                 'image' => $imagePath,
             ]);
 
+            // Save job types
+            if (!empty($validated['jobType'])) {
+                foreach ($validated['jobType'] as $type) {
+                    $job->jobTypes()->create(['type' => $type]);
+                }
+            }
+
+            // Save work locations
+            if (!empty($validated['workLocation'])) {
+                foreach ($validated['workLocation'] as $location) {
+                    $job->workLocations()->create(['location' => $location]);
+                }
+            }
+
             return response()->json([
                 'message' => 'Job created successfully',
-                'job' => $job,
+                'job' => $job->load('jobTypes', 'workLocations'),
             ], 201);
         } catch (ValidationException $e) {
-            // If validation fails, return custom error messages
             return response()->json([
                 'message' => 'Validation error',
                 'errors' => $e->errors(),
-            ], 422); 
+            ], 422);
         }
     }
 

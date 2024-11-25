@@ -27,7 +27,7 @@ Route::controller(UserController::class)->group(function () {
 });
 
 Route::post('jobs/store',[JobController::class,'store']);
-
+Route::get('jobs/show', [JobController::class, 'index']);
 
 
 // Routes for authenticated user details and logout, using auth:api middleware
