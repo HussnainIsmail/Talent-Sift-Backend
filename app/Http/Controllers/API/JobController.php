@@ -46,6 +46,10 @@ class JobController extends Controller
                 'workLocation.*' => 'string',
                 'subscribe' => 'nullable|boolean',
                 'image' => 'nullable|image|max:10240',
+                'minSalary' => 'required|numeric|min:0',
+                'maxSalary' => 'required|numeric|min:0|gte:minSalary',
+                'jobLevel' => 'nullable|array',
+                'jobLevel.*' => 'string',  // Job Level validation
             ]);
 
             // Handle image upload
@@ -61,6 +65,8 @@ class JobController extends Controller
                 'description' => $validated['description'],
                 'subscribe' => $validated['subscribe'] ?? 0,
                 'image' => $imagePath,
+                'minSalary' => $validated['minSalary'] ?? null,
+                'maxSalary' => $validated['maxSalary'] ?? null,
             ]);
 
             // Save job types
@@ -77,9 +83,16 @@ class JobController extends Controller
                 }
             }
 
+            // Save job levels
+            if (!empty($validated['jobLevel'])) {
+                foreach ($validated['jobLevel'] as $level) {
+                    $job->jobLevels()->create(['level' => $level]);
+                }
+            }
+
             return response()->json([
                 'message' => 'Job created successfully',
-                'job' => $job->load('jobTypes', 'workLocations'),
+                'job' => $job->load('jobTypes', 'workLocations', 'jobLevels'),
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
@@ -88,6 +101,8 @@ class JobController extends Controller
             ], 422);
         }
     }
+
+
 
 
 
