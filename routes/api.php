@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\Api\JobController;
+use App\Http\Controllers\Api\CompanyController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +30,8 @@ Route::controller(UserController::class)->group(function () {
 
 Route::post('jobs/store',[JobController::class,'store']);
 Route::get('jobs/show', [JobController::class, 'index']);
+Route::post('companies/store',[CompanyController::class,'store']);
+
 
 
 // Routes for authenticated user details and logout, using auth:api middleware

@@ -18,12 +18,10 @@ class CreateJobsTable extends Migration
             $table->string('jobtitle');
             $table->string('email');
             $table->text('description');
-            // $table->json('jobType')->nullable();
-            // JSON field for multiple job types
-            // $table->json('workLocation')->nullable(); 
-            // JSON field for multiple locations
-            $table->boolean('subscribe')->default(false);  // Subscription status
-            $table->string('image')->nullable();  // Optional image field
+            $table->boolean('subscribe')->default(false);
+            $table->string('image')->nullable();
+            $table->unsignedBigInteger('minSalary')->nullable(); // Regular unsigned integer
+            $table->unsignedBigInteger('maxSalary')->nullable();
             $table->timestamps();
         });
     }
