@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\CompanyController;
-
+use App\Http\Controllers\API\JobApplicationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +31,7 @@ Route::controller(UserController::class)->group(function () {
 Route::post('jobs/store',[JobController::class,'store']);
 Route::get('jobs/show', [JobController::class, 'index']);
 Route::post('companies/store',[CompanyController::class,'store']);
+Route::post('applications/store', [JobApplicationController::class, 'store']);
 
 
 
