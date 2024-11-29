@@ -27,7 +27,7 @@ class JobApplicationController extends Controller
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|unique:job_applications,email',
             'contact_no' => 'required|string|max:15',
-            'cv' => 'required|file|mimes:pdf,doc,docx,mp4,txt|max:2048',  // Allow .mp4 and other types as needed
+            'cv' => 'required|file|mimes:pdf,doc,docx,mp4,txt|max:4096',  // Allow .mp4 and other types as needed
             'job_id' => 'required|exists:jobs,id',
         ]);
 
@@ -45,7 +45,6 @@ class JobApplicationController extends Controller
         // Store the file with its original extension
         $cvPath = $request->file('cv')->storeAs($cvDirectory, uniqid() . '.' . $fileExtension, 'public');
 
-        // Find the job
         $job = Job::find($validatedData['job_id']);
         if (!$job) {
             return response()->json([
@@ -53,14 +52,13 @@ class JobApplicationController extends Controller
             ], 404);
         }
 
-        // Save the job application data in the database
         $jobApplication = JobApplication::create([
             'first_name' => $validatedData['first_name'],
             'last_name' => $validatedData['last_name'],
             'email' => $validatedData['email'],
             'contact_no' => $validatedData['contact_no'],
-            'cv_path' => $cvPath, // Store the path to the uploaded CV
-            'job_id' => $validatedData['job_id'], // Save the job_id foreign key
+            'cv_path' => $cvPath, 
+            'job_id' => $validatedData['job_id'], 
         ]);
 
         // Return a success response

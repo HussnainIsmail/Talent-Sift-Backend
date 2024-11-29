@@ -6,7 +6,11 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\API\JobApplicationController;
+use App\Http\Controllers\API\PermissionController;
+use App\Http\Controllers\API\RolesController;
+
 use Illuminate\Support\Facades\Storage;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -33,9 +37,6 @@ Route::get('jobs/show', [JobController::class, 'index']);
 Route::post('companies/store', [CompanyController::class, 'store']);
 Route::post('applications/store', [JobApplicationController::class, 'store']);
 Route::get('applications/list', [JobApplicationController::class, 'index']);
-
-
-
 Route::get('download-cv/{filename}', function ($filename) {
     $filePath = public_path("storage/cvs/{$filename}");
     if (file_exists($filePath)) {
@@ -43,7 +44,8 @@ Route::get('download-cv/{filename}', function ($filename) {
     }
     return response()->json(['message' => 'File not found'], 404);
 });
-
+Route::resource('permissions', PermissionController::class);
+Route::resource('roles', RolesController::class);
 
 
 // Routes for authenticated user details and logout, using auth:api middleware

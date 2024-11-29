@@ -49,7 +49,7 @@ class JobController extends Controller
                 'minSalary' => 'required|numeric|min:0',
                 'maxSalary' => 'required|numeric|min:0|gte:minSalary',
                 'jobLevel' => 'nullable|array',
-                'jobLevel.*' => 'string',  // Job Level validation
+                'jobLevel.*' => 'string', 
             ]);
 
             // Handle image upload
