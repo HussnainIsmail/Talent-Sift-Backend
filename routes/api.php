@@ -6,7 +6,7 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\API\JobApplicationController;
-
+use Illuminate\Support\Facades\Storage;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -28,10 +28,21 @@ Route::controller(UserController::class)->group(function () {
     Route::post('register', 'register');
 });
 
-Route::post('jobs/store',[JobController::class,'store']);
+Route::post('jobs/store', [JobController::class, 'store']);
 Route::get('jobs/show', [JobController::class, 'index']);
-Route::post('companies/store',[CompanyController::class,'store']);
+Route::post('companies/store', [CompanyController::class, 'store']);
 Route::post('applications/store', [JobApplicationController::class, 'store']);
+Route::get('applications/list', [JobApplicationController::class, 'index']);
+
+
+
+Route::get('download-cv/{filename}', function ($filename) {
+    $filePath = public_path("storage/cvs/{$filename}");
+    if (file_exists($filePath)) {
+        return response()->file($filePath);
+    }
+    return response()->json(['message' => 'File not found'], 404);
+});
 
 
 
