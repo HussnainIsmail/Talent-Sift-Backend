@@ -22,15 +22,20 @@ use Illuminate\Support\Facades\Storage;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
 
 // send request from login form 
 Route::controller(UserController::class)->group(function () {
     Route::post('login', 'userLogin');
     Route::post('register', 'register');
+    Route::get('users', 'index'); 
 });
+Route::get('/users/{id}', [UserController::class, 'edit']);
+Route::put('/users/update/{id}', [UserController::class, 'update']);
+Route::get('logout', [UserController::class, 'userLogout']);
+
 
 Route::post('jobs/store', [JobController::class, 'store']);
 Route::get('jobs/show', [JobController::class, 'index']);
@@ -48,8 +53,8 @@ Route::resource('permissions', PermissionController::class);
 Route::resource('roles', RolesController::class);
 
 
-// Routes for authenticated user details and logout, using auth:api middleware
-Route::middleware('auth:api')->controller(UserController::class)->group(function () {
-    Route::get('userDetail', 'getUserDetail');
-    Route::get('logout', 'userLogout');
+
+Route::middleware('auth:api')->get('/check-auth', function (Request $request) {
+    return response()->json(['authenticated' => true]);
 });
+

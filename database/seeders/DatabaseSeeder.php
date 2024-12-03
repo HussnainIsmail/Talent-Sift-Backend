@@ -13,17 +13,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create the 'owner' role if it doesn't exist
-        $ownerRole = Role::firstOrCreate(['name' => 'owner']);
+       
 
         // Create the user with admin details
         $user = User::factory()->create([
             'name' => 'Muhammad Hussnaim',
+            'role' => 'super-admin',
             'email' => 'admin@gmail.com',
             'password' => bcrypt('123321123'),
         ]);
 
-        // Assign the 'owner' role to the user
-        $user->assignRole($ownerRole);
+        
     }
 }

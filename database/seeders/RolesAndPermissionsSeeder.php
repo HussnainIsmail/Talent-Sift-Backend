@@ -13,34 +13,29 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run()
     {
-        // Create Permissions
-        Permission::create(['name' => 'view dashboard']);
-        Permission::create(['name' => 'edit users']);
-        Permission::create(['name' => 'post job']);
-        Permission::create(['name' => 'view jobs']);
-        Permission::create(['name' => 'upload cv']);
-        Permission::create(['name' => 'delete jobs']);
-        Permission::create(['name' => 'view profile']);
-        Permission::create(['name' => 'edit profile']);
+        // Create permissions
+        $permissions = [
+            'edit articles',
+            'delete articles',
+            'publish articles',
+            'view articles'
+        ];
 
-        // Create Roles and Assign Permissions
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
 
-        // Super Admin (Owner)
-        $owner = Role::create(['name' => 'owner']);
-        $owner->givePermissionTo(Permission::all());
+        // Create roles and assign existing permissions
+        $editorRole = Role::firstOrCreate(['name' => 'editor']);
+        $editorRole->syncPermissions(['edit articles', 'delete articles']);
 
-        // Admin (can't remove super admin)
-        $admin = Role::create(['name' => 'admin']);
-        $admin->givePermissionTo(['post job', 'view jobs', 'delete jobs']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $adminRole->syncPermissions(Permission::all());
 
-        // Sub Admin (can post and delete jobs)
-        $subAdmin = Role::create(['name' => 'sub-admin']);
-        $subAdmin->givePermissionTo(['post job', 'view jobs', 'delete jobs']);
+        $viewerRole = Role::firstOrCreate(['name' => 'viewer']);
+        $viewerRole->syncPermissions(['view articles']);
 
-        // Regular User
-        $user = Role::create(['name' => 'user']);
-        $user->givePermissionTo(['view profile', 'edit profile']);
-
-    
+        // Output to confirm seeding
+        $this->command->info('Roles and permissions have been seeded!');
     }
 }

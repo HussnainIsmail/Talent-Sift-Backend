@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Http\Controllers\API;
+
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
@@ -11,52 +13,47 @@ use Mail;
 
 class UserController extends Controller
 {
+    public function index()
+    {
+        try {
+
+            $users = User::all();
+
+            return response()->json([
+                'users' => $users
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch users.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function userLogin(Request $request)
     {
-        // Validate input
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required|string|min:6',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
         $credentials = $request->only('email', 'password');
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
-            return response()->json([
-                'status' => 401,
-                'message' => 'Email does not exist.'
-            ], 401);
+            return response()->json(['message' => 'Email not found'], 404);
         }
 
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'status' => 401,
-                'message' => 'Incorrect password.'
-            ], 401);
-        }
+        if (Hash::check($request->password, $user->password)) {
+            $token = $user->createToken('YourApp')->accessToken;
 
-        if (Auth::attempt($credentials)) {
-            $token = $user->createToken('example')->accessToken;
+            // Store the token in the api_token column
+            $user->api_token = $token;
+            $user->save();
 
             return response()->json([
-                'status' => 200,
                 'token' => $token,
-                'message' => 'Login successful.'
+                'message' => 'Login successful'
             ], 200);
         }
 
-        return response()->json([
-            'status' => 401,
-            'message' => 'Login failed. Please try again.'
-        ], 401);
+        return response()->json(['message' => 'Invalid credentials'], 401);
     }
-
 
 
     public function register(Request $request)
@@ -79,9 +76,55 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // Send registration email
-        // Mail::to($user->email)->send(new RegisterMail($user));
 
         return response()->json(['message' => 'User registered successfully!', 'user' => $user], 201);
+    }
+    public function edit($id)
+    {
+        try {
+            $user = User::findOrFail($id);
+
+            // Return the user details (including role) for the edit page
+            return response()->json([
+                'user' => $user
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'User not found.',
+                'error' => $e->getMessage()
+            ], 404);
+        }
+    }
+    public function update(Request $request, $id)
+    {
+
+
+
+        try {
+            $user = User::findOrFail($id);
+
+            // Update user details
+            $user->name = $request->input('name');
+            $user->email = $request->input('email');
+            $user->role = $request->input('role');
+            $user->save();
+
+            return response()->json([
+                'message' => 'User updated successfully.',
+                'user' => $user
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update user.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function userLogout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Logged out successfully.'], 200);
     }
 }
