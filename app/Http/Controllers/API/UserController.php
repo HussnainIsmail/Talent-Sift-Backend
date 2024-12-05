@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\API;
-
+use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
@@ -40,23 +40,39 @@ class UserController extends Controller
     
         // Attempt to authenticate the user using Auth::attempt()
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
-            // Authentication successful, generate a Passport token
-            $user = Auth::user(); 
-            $role = $user->role; 
+            // Authentication successful
+            $user = Auth::user();
+            $roleName = $user->role; 
+            $role = \DB::table('roles')
+                ->where('name', $roleName)
+                ->first(); 
+    
+            $permissions = \DB::table('role_has_permissions')
+                ->where('role_id', $role->id)
+                ->pluck('permission_id');
+    
+            $permissionNames = \DB::table('permissions')
+                ->whereIn('id', $permissions)
+                ->pluck('name');
+    
+            // Create the token
             $token = $user->createToken('YourAppName')->accessToken;
     
-            // Return the token and success message
             return response()->json([
-                'token' => $token,
-                'role' => $role,
+                'token' => $token, 
+                'role' => $roleName,
+                'permissions' => $permissionNames, 
                 'message' => 'Login successful'
             ], 200);
         }
     
-        // Authentication failed, return error response
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
-
+    
+    
+    
+    
+    
 
 
     public function register(Request $request)
