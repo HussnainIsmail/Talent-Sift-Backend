@@ -64,7 +64,7 @@ class RolesController extends Controller
         }
 
         // Fetch all permissions from the role_and_permission table
-        $permissions = $role->permissions;  // Assuming a many-to-many relationship
+        $permissions = $role->permissions; 
 
         // Get the permission ids for the role
         $rolePermissions = $permissions->pluck('id')->toArray();

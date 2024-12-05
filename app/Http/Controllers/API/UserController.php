@@ -32,28 +32,31 @@ class UserController extends Controller
 
     public function userLogin(Request $request)
     {
-        $credentials = $request->only('email', 'password');
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json(['message' => 'Email not found'], 404);
-        }
-
-        if (Hash::check($request->password, $user->password)) {
-            $token = $user->createToken('YourApp')->accessToken;
-
-            // Store the token in the api_token column
-            $user->api_token = $token;
-            $user->save();
-
+        // Validate the incoming request
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+    
+        // Attempt to authenticate the user using Auth::attempt()
+        if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+            // Authentication successful, generate a Passport token
+            $user = Auth::user(); 
+            $role = $user->role; 
+            $token = $user->createToken('YourAppName')->accessToken;
+    
+            // Return the token and success message
             return response()->json([
                 'token' => $token,
+                'role' => $role,
                 'message' => 'Login successful'
             ], 200);
         }
-
+    
+        // Authentication failed, return error response
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
+
 
 
     public function register(Request $request)

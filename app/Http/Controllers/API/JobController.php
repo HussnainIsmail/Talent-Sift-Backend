@@ -32,75 +32,80 @@ class JobController extends Controller
      * Store a newly created resource in storage.
      */
 
-    public function store(Request $request)
-    {
-        try {
-            // Validate request data
-            $validated = $request->validate([
-                'jobtitle' => 'required|string|max:255',
-                'email' => 'required|email|max:255',
-                'description' => 'required|string',
-                'jobType' => 'nullable|array',
-                'jobType.*' => 'string',
-                'workLocation' => 'nullable|array',
-                'workLocation.*' => 'string',
-                'subscribe' => 'nullable|boolean',
-                'image' => 'nullable|image|max:10240',
-                'minSalary' => 'required|numeric|min:0',
-                'maxSalary' => 'required|numeric|min:0|gte:minSalary',
-                'jobLevel' => 'nullable|array',
-                'jobLevel.*' => 'string', 
-            ]);
-
-            // Handle image upload
-            $imagePath = null;
-            if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('job_images', 'public');
-            }
-
-            // Create job record
-            $job = Job::create([
-                'jobtitle' => $validated['jobtitle'],
-                'email' => $validated['email'],
-                'description' => $validated['description'],
-                'subscribe' => $validated['subscribe'] ?? 0,
-                'image' => $imagePath,
-                'minSalary' => $validated['minSalary'] ?? null,
-                'maxSalary' => $validated['maxSalary'] ?? null,
-            ]);
-
-            // Save job types
-            if (!empty($validated['jobType'])) {
-                foreach ($validated['jobType'] as $type) {
-                    $job->jobTypes()->create(['type' => $type]);
-                }
-            }
-
-            // Save work locations
-            if (!empty($validated['workLocation'])) {
-                foreach ($validated['workLocation'] as $location) {
-                    $job->workLocations()->create(['location' => $location]);
-                }
-            }
-
-            // Save job levels
-            if (!empty($validated['jobLevel'])) {
-                foreach ($validated['jobLevel'] as $level) {
-                    $job->jobLevels()->create(['level' => $level]);
-                }
-            }
-
-            return response()->json([
-                'message' => 'Job created successfully',
-                'job' => $job->load('jobTypes', 'workLocations', 'jobLevels'),
-            ], 201);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'message' => 'Validation error',
-                'errors' => $e->errors(),
-            ], 422);
-        }
-    }
+     public function store(Request $request)
+     {
+         try {
+             if (!auth()->user()->can('create-job')) {
+                 return response()->json(['message' => 'Unauthorized'], 403);
+             }
+     
+             // Validate request data
+             $validated = $request->validate([
+                 'jobtitle' => 'required|string|max:255',
+                 'email' => 'required|email|max:255',
+                 'description' => 'required|string',
+                 'jobType' => 'nullable|array',
+                 'jobType.*' => 'string',
+                 'workLocation' => 'nullable|array',
+                 'workLocation.*' => 'string',
+                 'subscribe' => 'nullable|boolean',
+                 'image' => 'nullable|image|max:10240',
+                 'minSalary' => 'required|numeric|min:0',
+                 'maxSalary' => 'required|numeric|min:0|gte:minSalary',
+                 'jobLevel' => 'nullable|array',
+                 'jobLevel.*' => 'string', 
+             ]);
+     
+             // Handle image upload
+             $imagePath = null;
+             if ($request->hasFile('image')) {
+                 $imagePath = $request->file('image')->store('job_images', 'public');
+             }
+     
+             // Create job record
+             $job = Job::create([
+                 'jobtitle' => $validated['jobtitle'],
+                 'email' => $validated['email'],
+                 'description' => $validated['description'],
+                 'subscribe' => $validated['subscribe'] ?? 0,
+                 'image' => $imagePath,
+                 'minSalary' => $validated['minSalary'] ?? null,
+                 'maxSalary' => $validated['maxSalary'] ?? null,
+             ]);
+     
+             // Save job types
+             if (!empty($validated['jobType'])) {
+                 foreach ($validated['jobType'] as $type) {
+                     $job->jobTypes()->create(['type' => $type]);
+                 }
+             }
+     
+             // Save work locations
+             if (!empty($validated['workLocation'])) {
+                 foreach ($validated['workLocation'] as $location) {
+                     $job->workLocations()->create(['location' => $location]);
+                 }
+             }
+     
+             // Save job levels
+             if (!empty($validated['jobLevel'])) {
+                 foreach ($validated['jobLevel'] as $level) {
+                     $job->jobLevels()->create(['level' => $level]);
+                 }
+             }
+     
+             return response()->json([
+                 'message' => 'Job created successfully',
+                 'job' => $job->load('jobTypes', 'workLocations', 'jobLevels'),
+             ], 201);
+         } catch (ValidationException $e) {
+             return response()->json([
+                 'message' => 'Validation error',
+                 'errors' => $e->errors(),
+             ], 422);
+         }
+     }
+     
 
 
 

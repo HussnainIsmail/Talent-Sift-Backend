@@ -30,31 +30,39 @@ use Illuminate\Support\Facades\Storage;
 Route::controller(UserController::class)->group(function () {
     Route::post('login', 'userLogin');
     Route::post('register', 'register');
-    Route::get('users', 'index'); 
 });
-Route::get('/users/{id}', [UserController::class, 'edit']);
-Route::put('/users/update/{id}', [UserController::class, 'update']);
-Route::get('logout', [UserController::class, 'userLogout']);
-
-
-Route::post('jobs/store', [JobController::class, 'store']);
 Route::get('jobs/show', [JobController::class, 'index']);
-Route::post('companies/store', [CompanyController::class, 'store']);
-Route::post('applications/store', [JobApplicationController::class, 'store']);
-Route::get('applications/list', [JobApplicationController::class, 'index']);
-Route::get('download-cv/{filename}', function ($filename) {
-    $filePath = public_path("storage/cvs/{$filename}");
-    if (file_exists($filePath)) {
-        return response()->file($filePath);
-    }
-    return response()->json(['message' => 'File not found'], 404);
-});
 Route::resource('permissions', PermissionController::class);
 Route::resource('roles', RolesController::class);
+
+
+
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'edit']);
+    Route::put('/users/update/{id}', [UserController::class, 'update']);
+    Route::get('logout', [UserController::class, 'userLogout']);
+    Route::post('companies/store', [CompanyController::class, 'store']);
+    Route::middleware(['auth:api', 'role:admin'])->group(function () {
+        Route::post('jobs/store', [JobController::class, 'store']);
+    });
+    Route::post('companies/store', [CompanyController::class, 'store']);
+    Route::post('applications/store', [JobApplicationController::class, 'store']);
+    Route::get('applications/list', [JobApplicationController::class, 'index']);
+    Route::get('download-cv/{filename}', function ($filename) {
+        $filePath = public_path("storage/cvs/{$filename}");
+        if (file_exists($filePath)) {
+            return response()->file($filePath);
+        }
+        return response()->json(['message' => 'File not found'], 404);
+    });
+});
+
+
 
 
 
 Route::middleware('auth:api')->get('/check-auth', function (Request $request) {
     return response()->json(['authenticated' => true]);
 });
-

@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use Illuminate\Validation\ValidationException;
-
+// use Illuminate\Support\Facades\Auth;
+// use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Company;
@@ -26,24 +27,25 @@ class CompanyController extends Controller
         //
     }
 
+
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
         try {
-            // Validate the incoming data
+            // Validate the incoming request data
             $validatedData = $request->validate([
                 'companyName' => 'required|string|max:255',
                 'contactNo' => 'required|string|max:20',
                 'companyEmail' => 'required|email|max:255',
                 'foundationDate' => 'required|date',
                 'services' => 'required|array',
-                'services.*' => 'required|string', // Assuming each service is a string
-                'location' => 'required|string',
+                'services.*' => 'required|string', 
+                'location' => 'required|string|max:255',
             ]);
-
-            // Create the company
+    
+            // Create the company using the validated data
             Company::create([
                 'company_name' => $validatedData['companyName'],
                 'contact_no' => $validatedData['contactNo'],
@@ -52,13 +54,16 @@ class CompanyController extends Controller
                 'services' => json_encode($validatedData['services']),
                 'company_location' => $validatedData['location'],
             ]);
-
+    
+            // Return a success response
             return response()->json([
                 'message' => 'Company created successfully',
             ], 201);
         } catch (ValidationException $e) {
             // Log validation errors
             \Log::error('Validation Error:', ['errors' => $e->errors()]);
+    
+            // Return validation error response
             return response()->json([
                 'message' => 'Validation error',
                 'errors' => $e->errors(),
@@ -69,6 +74,8 @@ class CompanyController extends Controller
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+    
+            // Return a general error response
             return response()->json([
                 'message' => 'An unexpected error occurred.',
             ], 500);
