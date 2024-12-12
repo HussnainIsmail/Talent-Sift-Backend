@@ -33,19 +33,21 @@ class CompanyController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
         try {
-            // Validate the incoming request data
+           
             $validatedData = $request->validate([
                 'companyName' => 'required|string|max:255',
                 'contactNo' => 'required|string|max:20',
                 'companyEmail' => 'required|email|max:255',
                 'foundationDate' => 'required|date',
                 'services' => 'required|array',
-                'services.*' => 'required|string', 
+                'services.*' => 'required|string',
                 'location' => 'required|string|max:255',
             ]);
-    
-            // Create the company using the validated data
+
+           
+
             Company::create([
                 'company_name' => $validatedData['companyName'],
                 'contact_no' => $validatedData['contactNo'],
@@ -53,8 +55,9 @@ class CompanyController extends Controller
                 'company_foundation_date' => $validatedData['foundationDate'],
                 'services' => json_encode($validatedData['services']),
                 'company_location' => $validatedData['location'],
+                'user_id' => $user->id, 
             ]);
-    
+
             // Return a success response
             return response()->json([
                 'message' => 'Company created successfully',
@@ -62,7 +65,7 @@ class CompanyController extends Controller
         } catch (ValidationException $e) {
             // Log validation errors
             \Log::error('Validation Error:', ['errors' => $e->errors()]);
-    
+
             // Return validation error response
             return response()->json([
                 'message' => 'Validation error',
@@ -74,13 +77,14 @@ class CompanyController extends Controller
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-    
+
             // Return a general error response
             return response()->json([
                 'message' => 'An unexpected error occurred.',
             ], 500);
         }
     }
+
 
 
 

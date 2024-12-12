@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\API;
+
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +19,6 @@ class UserController extends Controller
         try {
 
             $users = User::all();
-
             return response()->json([
                 'users' => $users
             ], 200);
@@ -32,47 +32,47 @@ class UserController extends Controller
 
     public function userLogin(Request $request)
     {
-        // Validate the incoming request
+        
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string|min:6',
         ]);
-    
-        // Attempt to authenticate the user using Auth::attempt()
+
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             // Authentication successful
             $user = Auth::user();
-            $roleName = $user->role; 
+            $roleName = $user->role;
             $role = \DB::table('roles')
                 ->where('name', $roleName)
-                ->first(); 
-    
+                ->first();
+
             $permissions = \DB::table('role_has_permissions')
                 ->where('role_id', $role->id)
                 ->pluck('permission_id');
-    
+
             $permissionNames = \DB::table('permissions')
                 ->whereIn('id', $permissions)
                 ->pluck('name');
-    
+
             // Create the token
             $token = $user->createToken('YourAppName')->accessToken;
-    
+
             return response()->json([
-                'token' => $token, 
+                'token' => $token,
                 'role' => $roleName,
-                'permissions' => $permissionNames, 
+                'permissions' => $permissionNames,
+                'name' => $user->name,
                 'message' => 'Login successful'
             ], 200);
         }
-    
+
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
-    
-    
-    
-    
-    
+
+
+
+
+
 
 
     public function register(Request $request)

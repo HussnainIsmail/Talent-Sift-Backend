@@ -35,18 +35,14 @@ Route::get('jobs/show', [JobController::class, 'index']);
 Route::resource('permissions', PermissionController::class);
 Route::resource('roles', RolesController::class);
 
-
-
-
 Route::middleware('auth:api')->group(function () {
     Route::get('users', [UserController::class, 'index']);
     Route::get('/users/{id}', [UserController::class, 'edit']);
     Route::put('/users/update/{id}', [UserController::class, 'update']);
     Route::get('logout', [UserController::class, 'userLogout']);
     Route::post('companies/store', [CompanyController::class, 'store']);
-    Route::middleware(['auth:api', 'role:admin'])->group(function () {
-        Route::post('jobs/store', [JobController::class, 'store']);
-    });
+    Route::post('jobs/store', [JobController::class, 'store']);
+    Route ::get ('jobs', [JobController:: class, 'index']);
     Route::post('companies/store', [CompanyController::class, 'store']);
     Route::post('applications/store', [JobApplicationController::class, 'store']);
     Route::get('applications/list', [JobApplicationController::class, 'index']);
