@@ -21,6 +21,7 @@ class JobApplicationController extends Controller
 
     public function store(Request $request)
     {
+      
         // Validate the request data
         $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',

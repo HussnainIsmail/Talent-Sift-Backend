@@ -103,6 +103,22 @@ class RolesController extends Controller
         // Return success message
         return response()->json(['message' => 'Role updated successfully.']);
     }
+
+
+    public function destroy($id)
+    {
+        $role = Role::find($id);
+
+        if (!$role) {
+            return response()->json(['message' => 'Role not found'], 404);
+        }
+
+        $role->delete();
+
+        return response()->json(['message' => 'role deleted successfully']);
+    }
+
+
     public function addPermissionToRoles($roleId)
     {
         try {

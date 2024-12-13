@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\API;
 
-use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
@@ -10,15 +9,24 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Mail\RegisterMail;
+
 use Mail;
 
 class UserController extends Controller
 {
     public function index()
     {
-        try {
+        $user = auth()->user();
 
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
+
+        try {
             $users = User::all();
+
             return response()->json([
                 'users' => $users
             ], 200);
@@ -30,26 +38,31 @@ class UserController extends Controller
         }
     }
 
+
     public function userLogin(Request $request)
     {
-        
+        // Validate the incoming request
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string|min:6',
         ]);
 
+        // Attempt to log in the user
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
-            // Authentication successful
             $user = Auth::user();
-            $roleName = $user->role;
-            $role = \DB::table('roles')
-                ->where('name', $roleName)
+            $role = $user->role;
+            $roleData = \DB::table('roles')
+                ->where('name', $role)
                 ->first();
-
+            if (!$roleData) {
+                return response()->json(['message' => 'Role not found'], 404);
+            }
+            // Get the permissions associated with the role
             $permissions = \DB::table('role_has_permissions')
-                ->where('role_id', $role->id)
+                ->where('role_id', $roleData->id)
                 ->pluck('permission_id');
 
+            // Fetch the permission names from the 'permissions' table
             $permissionNames = \DB::table('permissions')
                 ->whereIn('id', $permissions)
                 ->pluck('name');
@@ -57,9 +70,12 @@ class UserController extends Controller
             // Create the token
             $token = $user->createToken('YourAppName')->accessToken;
 
+            // Store the token in the users table
+            $user->api_token = $token;
+            $user->save();
             return response()->json([
                 'token' => $token,
-                'role' => $roleName,
+                'role' => $role,
                 'permissions' => $permissionNames,
                 'name' => $user->name,
                 'message' => 'Login successful'
@@ -68,11 +84,6 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
-
-
-
-
-
 
 
     public function register(Request $request)
@@ -98,14 +109,15 @@ class UserController extends Controller
 
         return response()->json(['message' => 'User registered successfully!', 'user' => $user], 201);
     }
+
+
     public function edit($id)
     {
         try {
-            $user = User::findOrFail($id);
-
-            // Return the user details (including role) for the edit page
+            $user = auth()->user();
+            $userToEdit = User::findOrFail($id);
             return response()->json([
-                'user' => $user
+                'user' => $userToEdit
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -114,18 +126,22 @@ class UserController extends Controller
             ], 404);
         }
     }
+
+
     public function update(Request $request, $id)
     {
-
-
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'role' => 'required|string|max:255',
+        ]);
 
         try {
-            $user = User::findOrFail($id);
 
-            // Update user details
-            $user->name = $request->input('name');
-            $user->email = $request->input('email');
-            $user->role = $request->input('role');
+            $user = User::findOrFail($id);
+            $user->name = $validatedData['name'];
+            $user->email = $validatedData['email'];
+            $user->role = $validatedData['role'];
             $user->save();
 
             return response()->json([
@@ -133,13 +149,25 @@ class UserController extends Controller
                 'user' => $user
             ], 200);
         } catch (\Exception $e) {
+            // Catch any errors and return a failure response
             return response()->json([
                 'message' => 'Failed to update user.',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
+    public function destroy($id)
+    {
+        $user = User::find($id);
 
+        if (!$user) {
+            return response()->json(['message' => 'user not found'], 404);
+        }
+
+        $user->delete();
+
+        return response()->json(['message' => 'user deleted successfully']);
+    }
     public function userLogout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
