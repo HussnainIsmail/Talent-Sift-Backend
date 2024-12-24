@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\API\JobApplicationController;
 use App\Http\Controllers\API\PermissionController;
 use App\Http\Controllers\API\RolesController;
+use App\Http\Controllers\API\ResemeController;
 
 use Illuminate\Support\Facades\Storage;
 
@@ -32,10 +33,21 @@ Route::controller(UserController::class)->group(function () {
     Route::post('register', 'register');
 });
 Route::get('jobs/show', [JobController::class, 'index']);
-Route::resource('permissions', PermissionController::class);
-Route::resource('roles', RolesController::class);
 Route::get('/job/edit/{id}', [JobController::class, 'edit']);
+Route::get('jobs/show', [JobController::class, 'show']);
 
+Route::middleware(['auth:api', 'role:sub-admin'])->group(function () {
+    Route::post('jobs/store', [JobController::class, 'store']);
+    Route::get('jobs', [JobController::class, 'index']);
+    Route::get('jobs/{id}/edit', [JobController::class, 'edit']);
+    Route::put('/job/update/{id}', [JobController::class, 'update']);
+    Route::delete('jobs/{id}', [JobController::class, 'destroy']);
+});
+
+Route::middleware(['auth:api', 'role:super-admin'])->group(function () {
+    Route::resource('permissions', PermissionController::class);
+    Route::resource('roles', RolesController::class);
+});
 Route::middleware('auth:api')->group(function () {
     Route::get('users', [UserController::class, 'index']);
     Route::get('/users/{id}', [UserController::class, 'edit']);
@@ -43,15 +55,13 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('users/{id}', [UserController::class, 'destroy']);
     Route::get('logout', [UserController::class, 'userLogout']);
     Route::post('companies/store', [CompanyController::class, 'store']);
-    Route::post('jobs/store', [JobController::class, 'store']);
-    Route::get('jobs', [JobController::class, 'index']);
-    Route::get('jobs/{id}/edit', [JobController::class, 'edit']);
-    Route::put('/job/update/{id}', [JobController::class, 'update']);
-    Route::delete('jobs/{id}', [JobController::class, 'destroy']);
+
 
     Route::post('companies/store', [CompanyController::class, 'store']);
     Route::post('applications/store', [JobApplicationController::class, 'store']);
-    Route::get('applications/list', [JobApplicationController::class, 'index']);
+    Route::get('resume/list/{job}', [ResemeController::class, 'index']);
+    Route::post('send/intervie-email/{id}', [ResemeController::class, 'sendemail']);
+
     Route::get('download-cv/{filename}', function ($filename) {
         $filePath = public_path("storage/cvs/{$filename}");
         if (file_exists($filePath)) {

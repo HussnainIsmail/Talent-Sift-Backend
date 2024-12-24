@@ -29,6 +29,14 @@ class JobController extends Controller
         ]);
     }
 
+    
+    public function show()
+    {
+        $jobs = Job::with('jobTypes', 'workLocations')->get();
+        return response()->json([
+            'jobs' => $jobs,
+        ], 200);
+    }
 
     // Store
 
@@ -37,10 +45,8 @@ class JobController extends Controller
         try {
             $user = auth()->user();
 
-            // Check if the authenticated user is registered in the company table
             $company = Company::where('user_id', $user->id)->first();
 
-            // If the user is not registered as a company, return an error message
             if (!$company) {
                 return response()->json([
                     'message' => 'Please first register as a company.',

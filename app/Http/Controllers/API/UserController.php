@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+
 use App\Mail\RegisterMail;
 
 use Mail;
@@ -106,6 +107,7 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        Mail::to($user->email)->send(new RegisterMail($user));
 
         return response()->json(['message' => 'User registered successfully!', 'user' => $user], 201);
     }
