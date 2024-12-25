@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use App\Events\JobPosted; // Import the event
 use App\Models\Job;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -45,6 +45,7 @@ class JobController extends Controller
         try {
             $user = auth()->user();
 
+            // Check if the authenticated user is registered in the company table
             $company = Company::where('user_id', $user->id)->first();
 
             if (!$company) {
@@ -108,7 +109,7 @@ class JobController extends Controller
                     $job->jobLevels()->create(['level' => $level]);
                 }
             }
-
+            broadcast(new JobPosted($job));
             return response()->json([
                 'message' => 'Job created successfully',
                 'job' => $job->load('jobTypes', 'workLocations', 'jobLevels'),
