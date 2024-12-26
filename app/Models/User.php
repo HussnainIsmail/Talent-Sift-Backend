@@ -32,7 +32,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Company::class, 'user_id');
     }
-
+    public function profile()
+    {
+        return $this->hasOne(UserProfile::class, 'user_id');
+    }
 
     /**
      * The attributes that should be hidden for serialization.

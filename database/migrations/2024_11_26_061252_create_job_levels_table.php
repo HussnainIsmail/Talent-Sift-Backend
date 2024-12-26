@@ -10,7 +10,7 @@ class CreateJobLevelsTable extends Migration
     {
         Schema::create('job_levels', function (Blueprint $table) {
             $table->id();
-            $table->string('level');  // Entry, Middle, Expert
+            $table->string('level');  
             $table->unsignedBigInteger('job_id');
             $table->timestamps();
 

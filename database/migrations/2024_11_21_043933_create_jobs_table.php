@@ -16,13 +16,15 @@ class CreateJobsTable extends Migration
         Schema::create('jobs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('company_id'); // Add the company_id column
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->string('jobtitle');
             $table->string('email');
             $table->text('description');
             $table->boolean('subscribe')->default(false);
             $table->string('image')->nullable();
-            $table->unsignedBigInteger('minSalary')->nullable(); // Regular unsigned integer
+            $table->unsignedBigInteger('minSalary')->nullable();
             $table->unsignedBigInteger('maxSalary')->nullable();
             $table->timestamps();
         });

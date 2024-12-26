@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use Illuminate\Support\Facades\Mail;
 use App\Models\JobApplication;
 use App\Models\Job;
@@ -17,6 +18,13 @@ class ResemeController extends Controller
                 'message' => 'Job ID is required.',
             ], 400);
         }
+
+        // Ensure the user is authenticated
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $jobApplications = JobApplication::where('job_id', $job)->get();
 
         return response()->json([
@@ -24,24 +32,24 @@ class ResemeController extends Controller
             'job_id' => $job,
         ]);
     }
+
     public function sendemail(Request $request, $id)
     {
         $validated = $request->validate([
             'interviewType' => 'required|string',
             'scheduledDate' => 'required|date',
         ]);
-    
+
         $job = Job::find($id);
-    
+
         if (!$job) {
             return response()->json(['message' => 'Job not found'], 404);
         }
-    
+
         // Send email logic here
         // Mail::to($job->candidate_email)->send(new InterviewMail($validated));
         Mail::to($job->email)->send(new RegisterMail($job));
 
         return response()->json(['message' => 'Interview email sent successfully']);
     }
-    
 }

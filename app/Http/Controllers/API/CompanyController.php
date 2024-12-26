@@ -14,10 +14,32 @@ class CompanyController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        try {
+            $user = auth()->user(); 
+
+            // Retrieve all companies associated with the authenticated user
+            $companies = Company::where('user_id', $user->id)->get();
+
+            // Return a success response with the list of companies
+            return response()->json([
+                'data' => $companies,
+            ], 200);
+        } catch (\Exception $e) {
+            // Log unexpected errors
+            \Log::error('Unexpected Error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Return a general error response
+            return response()->json([
+                'message' => 'An unexpected error occurred.',
+            ], 500);
+        }
     }
+
 
     /**
      * Show the form for creating a new resource.

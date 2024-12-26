@@ -18,9 +18,17 @@ class Company extends Model
         'services',
         'company_location',
     ];
-
+    // Relationship with the User who owns the company
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    // Relationship with Job (One company has many jobs)
+    public function jobs()
+    {
+        return $this->hasMany(Job::class, 'company_id'); // Use 'company_id' as the foreign key
+    }
+
+  
 }

@@ -9,7 +9,7 @@ use App\Http\Controllers\API\JobApplicationController;
 use App\Http\Controllers\API\PermissionController;
 use App\Http\Controllers\API\RolesController;
 use App\Http\Controllers\API\ResemeController;
-
+use App\Http\Controllers\API\UserProfileController;
 use Illuminate\Support\Facades\Storage;
 
 /*
@@ -32,17 +32,20 @@ Route::controller(UserController::class)->group(function () {
     Route::post('login', 'userLogin');
     Route::post('register', 'register');
 });
-Route::get('jobs/show', [JobController::class, 'index']);
+Route::get('jobs/show', [JobController::class, 'index']); // for job list in admin panel job
 Route::get('/job/edit/{id}', [JobController::class, 'edit']);
 Route::get('jobs/show', [JobController::class, 'show']);
 
-Route::middleware(['auth:api', 'role:sub-admin'])->group(function () {
-    Route::post('jobs/store', [JobController::class, 'store']);
+Route::middleware(['auth:api', 'role:recuriter'])->group(function () {
+    Route::post('/jobs/store', [JobController::class, 'store']);
     Route::get('jobs', [JobController::class, 'index']);
     Route::get('jobs/{id}/edit', [JobController::class, 'edit']);
     Route::put('/job/update/{id}', [JobController::class, 'update']);
     Route::delete('jobs/{id}', [JobController::class, 'destroy']);
 });
+Route::middleware('auth:api')->get('user/profile', [UserProfileController::class, 'index']);
+Route::middleware('auth:api')->post('user/update-profile/{id}', [UserProfileController::class, 'updateProfile']);
+
 
 Route::middleware(['auth:api', 'role:super-admin'])->group(function () {
     Route::resource('permissions', PermissionController::class);
@@ -55,11 +58,9 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('users/{id}', [UserController::class, 'destroy']);
     Route::get('logout', [UserController::class, 'userLogout']);
     Route::post('companies/store', [CompanyController::class, 'store']);
-
-
-    Route::post('companies/store', [CompanyController::class, 'store']);
+    Route::get('companies', [CompanyController::class, 'index']);
     Route::post('applications/store', [JobApplicationController::class, 'store']);
-    Route::get('resume/list/{job}', [ResemeController::class, 'index']);
+    Route::get('jobs/{job}/applications', [JobController::class, 'index']);
     Route::post('send/intervie-email/{id}', [ResemeController::class, 'sendemail']);
 
     Route::get('download-cv/{filename}', function ($filename) {
@@ -70,9 +71,6 @@ Route::middleware('auth:api')->group(function () {
         return response()->json(['message' => 'File not found'], 404);
     });
 });
-
-
-
 
 
 Route::middleware('auth:api')->get('/check-auth', function (Request $request) {

@@ -1,38 +1,50 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Events\JobPosted; // Import the event
 use App\Models\Job;
+use App\Models\JobApplication;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use App\Models\Company;
+
 class JobController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
-    {
-        $user = $request->user();
-        $authjobs = Job::where('user_id', $user->id)->with(['jobTypes', 'workLocations'])->get();
+   public function index($job)
+{
+    // Ensure the job ID is provided
+    if (!$job) {
         return response()->json([
-            'authjobs' => $authjobs->map(function ($authjobs) {
-                return [
-                    'id' => $authjobs->id,
-                    'jobtitle' => $authjobs->jobtitle,
-                    'description' => $authjobs->description,
-                    'jobTypes' => $authjobs->jobTypes,
-                    'workLocations' => $authjobs->workLocations,
-                ];
-            }),
-        ]);
+            'message' => 'Job ID is required.',
+        ], 400);
     }
 
-    
+    // Ensure the user is authenticated
+    $user = auth()->user();
+    if (!$user) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    // Retrieve job applications for the job with the given ID
+    $jobApplications = JobApplication::where('job_id', $job)->get();
+
+    // Return the job applications in JSON format
+    return response()->json([
+        'job_applications' => $jobApplications,
+        'job_id' => $job,
+    ]);
+}
+
+
+
     public function show()
     {
-        $jobs = Job::with('jobTypes', 'workLocations')->get();
+        $jobs = Job::with(['jobTypes', 'workLocations', 'company'])->get();
         return response()->json([
             'jobs' => $jobs,
         ], 200);
@@ -44,17 +56,16 @@ class JobController extends Controller
     {
         try {
             $user = auth()->user();
-
-            // Check if the authenticated user is registered in the company table
-            $company = Company::where('user_id', $user->id)->first();
+            // Get the company based on the company name from the request
+            $company = Company::where('company_name', $request->company)->first();
 
             if (!$company) {
                 return response()->json([
-                    'message' => 'Please first register as a company.',
+                    'message' => 'Please register a valid company first.',
                 ], 403);
             }
 
-            // $user = $request->user();
+            // Validate the job request data
             $validated = $request->validate([
                 'jobtitle' => 'required|string|max:255',
                 'email' => 'required|email|max:255',
@@ -71,45 +82,49 @@ class JobController extends Controller
                 'jobLevel.*' => 'string',
             ]);
 
-            // Handle image upload
+            // Handle image upload if present
             $imagePath = null;
             if ($request->hasFile('image')) {
                 $imagePath = $request->file('image')->store('job_images', 'public');
             }
 
-            // Create job record
+            // Create the job record with the company_id
             $job = Job::create([
                 'user_id' => $user->id,
+                'company_id' => $company->id,  // Use the company_id found by company name
                 'jobtitle' => $validated['jobtitle'],
                 'email' => $validated['email'],
                 'description' => $validated['description'],
                 'subscribe' => $validated['subscribe'] ?? 0,
                 'image' => $imagePath,
-                'minSalary' => $validated['minSalary'] ?? null,
-                'maxSalary' => $validated['maxSalary'] ?? null,
+                'minSalary' => $validated['minSalary'],
+                'maxSalary' => $validated['maxSalary'],
             ]);
 
-            // Save job types
+            // Save job types if provided
             if (!empty($validated['jobType'])) {
                 foreach ($validated['jobType'] as $type) {
                     $job->jobTypes()->create(['type' => $type]);
                 }
             }
 
-            // Save work locations
+            // Save work locations if provided
             if (!empty($validated['workLocation'])) {
                 foreach ($validated['workLocation'] as $location) {
                     $job->workLocations()->create(['location' => $location]);
                 }
             }
 
-            // Save job levels
+            // Save job levels if provided
             if (!empty($validated['jobLevel'])) {
                 foreach ($validated['jobLevel'] as $level) {
                     $job->jobLevels()->create(['level' => $level]);
                 }
             }
+
+            // Broadcast the job posting event
             broadcast(new JobPosted($job));
+
             return response()->json([
                 'message' => 'Job created successfully',
                 'job' => $job->load('jobTypes', 'workLocations', 'jobLevels'),
@@ -119,8 +134,14 @@ class JobController extends Controller
                 'message' => 'Validation error',
                 'errors' => $e->errors(),
             ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
+
 
     /**
      * Show the form for creating a new resource.

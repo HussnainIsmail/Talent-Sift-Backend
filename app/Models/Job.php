@@ -12,6 +12,7 @@ class Job extends Model
     protected $fillable = [
         'jobtitle',
         'user_id',
+        'company_id', 
         'email',
         'description',
         'subscribe',
@@ -38,6 +39,11 @@ class Job extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+  
+    public function company()
+{
+    return $this->belongsTo(Company::class);
+}
     protected $casts = [
         'jobType' => 'array',
         'workLocation' => 'array',
