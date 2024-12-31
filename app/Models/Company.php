@@ -29,6 +29,10 @@ class Company extends Model
     {
         return $this->hasMany(Job::class, 'company_id'); // Use 'company_id' as the foreign key
     }
+    public function jobApplications()
+{
+    return $this->hasMany(JobApplication::class);
+}
 
   
 }

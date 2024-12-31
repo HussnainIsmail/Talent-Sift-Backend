@@ -16,5 +16,17 @@ class JobApplication extends Model
         'contact_no',
         'cv_path',
         'job_id',
+        'company_id',
     ];
+
+    public function company()
+{
+    return $this->belongsTo(Company::class);
+}
+public function job()
+{
+    return $this->belongsTo(Job::class);
+}
+
+    
 }

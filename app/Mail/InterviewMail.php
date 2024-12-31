@@ -10,17 +10,28 @@ class InterviewMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $details;
+    public $mailData;
 
-    public function __construct($details)
+    /**
+     * Create a new message instance.
+     *
+     * @param array $mailData
+     */
+    public function __construct($mailData)
     {
-        $this->details = $details;
+        $this->mailData = $mailData;
     }
+    
 
+    /**
+     * Build the message.
+     *
+     * @return $this
+     */
     public function build()
     {
-        return $this->subject('Interview Invitation')
-                    ->view('emails.interview')
-                    ->with('details', $this->details);
+        return $this->view('emails.interviewschedule')
+                    ->subject('Interview Invitation')
+                    ->with('mailData', $this->mailData);
     }
 }

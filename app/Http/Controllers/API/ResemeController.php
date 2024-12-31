@@ -4,8 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use Illuminate\Support\Facades\Mail;
 use App\Models\JobApplication;
-use App\Models\Job;
-use App\Mail\RegisterMail;
+use App\Mail\InterviewMail;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -18,6 +17,40 @@ class ResemeController extends Controller
                 'message' => 'Job ID is required.',
             ], 400);
         }
+        // Ensure the user is authenticated
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        // Fetch job applications associated with the provided job ID
+        $jobApplications = JobApplication::where('job_id', $job)->get();
+        // Format response data
+        $formattedApplications = $jobApplications->map(function ($application) {
+            return [
+                'id' => $application->id,
+                'first_name' => $application->first_name,
+                'last_name' => $application->last_name,
+                'email' => $application->email,
+                'contact_no' => $application->contact_no,
+                'cv_path' => $application->cv_path,
+            ];
+        });
+
+
+        return response()->json([
+            'job_applications' => $formattedApplications,
+            'job_id' => $job,
+        ]);
+    }
+
+    // show the detail for the email
+    public function show($applicationId)
+    {
+        if (!$applicationId) {
+            return response()->json([
+                'message' => 'Application ID is required.',
+            ], 400);
+        }
 
         // Ensure the user is authenticated
         $user = auth()->user();
@@ -25,31 +58,64 @@ class ResemeController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $jobApplications = JobApplication::where('job_id', $job)->get();
+        // Fetch the specific job application by its ID
+        $application = JobApplication::with(['job', 'company'])->find($applicationId);
 
+        if (!$application) {
+            return response()->json(['message' => 'Application not found.'], 404);
+        }
+
+        // Return the full application data along with company and job details
         return response()->json([
-            'job_applications' => $jobApplications,
-            'job_id' => $job,
+            'job_application' => $application,
+            'company' => $application->company,
+            'job' => $application->job,
         ]);
     }
 
-    public function sendemail(Request $request, $id)
+
+    public function sendInterviewEmail(Request $request, $applicationId)
     {
+        // Validate request
         $validated = $request->validate([
             'interviewType' => 'required|string',
             'scheduledDate' => 'required|date',
         ]);
 
-        $job = Job::find($id);
+        // Find the job application
+        $jobApplication = JobApplication::with('job', 'company')->find($applicationId);
 
-        if (!$job) {
-            return response()->json(['message' => 'Job not found'], 404);
+        if (!$jobApplication) {
+            return response()->json(['message' => 'Job application not found'], 404);
         }
 
-        // Send email logic here
-        // Mail::to($job->candidate_email)->send(new InterviewMail($validated));
-        Mail::to($job->email)->send(new RegisterMail($job));
+        // Data for email
+        $mailData = [
+            'interviewType' => $validated['interviewType'],
+            'scheduledDate' => $validated['scheduledDate'],
+            'applicantName' => $jobApplication->name,
+            'applicantEmail' => $jobApplication->email,
+            'contactNo' => $jobApplication->contact_no,
+            'jobTitle' => $jobApplication->job->jobtitle,
+            'companyName' => $jobApplication->company->name,
+            'companyLocation' => $jobApplication->company->location,
+        ];
 
-        return response()->json(['message' => 'Interview email sent successfully']);
+        try {
+            // Send email
+            Mail::to($jobApplication->email)->send(new InterviewMail($mailData));
+
+            // Return success response
+            return response()->json([
+                'message' => 'Interview email has been sent successfully.',
+                'data' => $mailData,
+            ], 200);
+        } catch (\Exception $e) {
+            // Catch any exceptions and log them
+            return response()->json([
+                'message' => 'Failed to send email.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

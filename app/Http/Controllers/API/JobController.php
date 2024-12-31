@@ -15,33 +15,49 @@ class JobController extends Controller
     /**
      * Display a listing of the resource.
      */
-   public function index($job)
-{
-    // Ensure the job ID is provided
-    if (!$job) {
+    public function index(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // Retrieve all jobs and authenticated user's jobs
+        $allJobs = Job::with(['jobTypes', 'workLocations'])->get();
+        $authJobs = Job::where('user_id', $user->id)
+            ->with(['jobTypes', 'workLocations'])
+            ->get();
+
+        // Format the data for response
+        $formattedAllJobs = $allJobs->map(function ($job) {
+            return [
+                'id' => $job->id,
+                'jobtitle' => $job->jobtitle,
+                'description' => $job->description,
+                'jobTypes' => $job->jobTypes,
+                'workLocations' => $job->workLocations,
+            ];
+        });
+
+        $formattedAuthJobs = $authJobs->map(function ($authJob) {
+            return [
+                'id' => $authJob->id,
+                'jobtitle' => $authJob->jobtitle,
+                'description' => $authJob->description,
+                'jobTypes' => $authJob->jobTypes,
+                'workLocations' => $authJob->workLocations,
+            ];
+        });
+
         return response()->json([
-            'message' => 'Job ID is required.',
-        ], 400);
+            'jobs' => $formattedAllJobs, // All jobs
+            'authjobs' => $formattedAuthJobs, // Authenticated user's jobs
+        ]);
     }
 
-    // Ensure the user is authenticated
-    $user = auth()->user();
-    if (!$user) {
-        return response()->json(['message' => 'Unauthorized'], 401);
-    }
 
-    // Retrieve job applications for the job with the given ID
-    $jobApplications = JobApplication::where('job_id', $job)->get();
-
-    // Return the job applications in JSON format
-    return response()->json([
-        'job_applications' => $jobApplications,
-        'job_id' => $job,
-    ]);
-}
-
-
-
+    // for show jobs in frontend
     public function show()
     {
         $jobs = Job::with(['jobTypes', 'workLocations', 'company'])->get();

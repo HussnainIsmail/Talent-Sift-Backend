@@ -107,7 +107,7 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // Mail::to($user->email)->send(new RegisterMail($user));
+        Mail::to($user->email)->send(new RegisterMail($user));
 
         return response()->json(['message' => 'User registered successfully!', 'user' => $user], 201);
     }

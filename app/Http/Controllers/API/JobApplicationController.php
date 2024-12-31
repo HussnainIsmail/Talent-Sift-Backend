@@ -18,10 +18,8 @@ class JobApplicationController extends Controller
             'job_applications' => $jobApplications
         ]);
     }
-
     public function store(Request $request)
     {
-      
         // Validate the request data
         $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
@@ -30,6 +28,7 @@ class JobApplicationController extends Controller
             'contact_no' => 'required|string|max:15',
             'cv' => 'required|file|mimes:pdf,doc,docx,mp4,txt|max:4096',  // Allow .mp4 and other types as needed
             'job_id' => 'required|exists:jobs,id',
+            'company_id' => 'required|exists:companies,id',
         ]);
 
         // Define the directory path in public storage
@@ -46,6 +45,7 @@ class JobApplicationController extends Controller
         // Store the file with its original extension
         $cvPath = $request->file('cv')->storeAs($cvDirectory, uniqid() . '.' . $fileExtension, 'public');
 
+        // Check if the job exists
         $job = Job::find($validatedData['job_id']);
         if (!$job) {
             return response()->json([
@@ -53,13 +53,15 @@ class JobApplicationController extends Controller
             ], 404);
         }
 
+        // Create the job application
         $jobApplication = JobApplication::create([
             'first_name' => $validatedData['first_name'],
             'last_name' => $validatedData['last_name'],
             'email' => $validatedData['email'],
             'contact_no' => $validatedData['contact_no'],
-            'cv_path' => $cvPath, 
-            'job_id' => $validatedData['job_id'], 
+            'cv_path' => $cvPath,
+            'job_id' => $validatedData['job_id'],
+            'company_id' => $validatedData['company_id'],
         ]);
 
         // Return a success response

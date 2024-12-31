@@ -32,7 +32,8 @@ Route::controller(UserController::class)->group(function () {
     Route::post('login', 'userLogin');
     Route::post('register', 'register');
 });
-Route::get('jobs/show', [JobController::class, 'index']); // for job list in admin panel job
+
+ // for job list in admin panel job
 Route::get('/job/edit/{id}', [JobController::class, 'edit']);
 Route::get('jobs/show', [JobController::class, 'show']);
 
@@ -59,9 +60,12 @@ Route::middleware('auth:api')->group(function () {
     Route::get('logout', [UserController::class, 'userLogout']);
     Route::post('companies/store', [CompanyController::class, 'store']);
     Route::get('companies', [CompanyController::class, 'index']);
-    Route::post('applications/store', [JobApplicationController::class, 'store']);
+    Route::post('/applications/store', [JobApplicationController::class, 'store']);
     Route::get('jobs/{job}/applications', [JobController::class, 'index']);
-    Route::post('send/intervie-email/{id}', [ResemeController::class, 'sendemail']);
+    Route::post('/send/interview-email/{applicationId}', [ResemeController::class, 'sendInterviewEmail']);
+    Route::get('/jobs/{job}/applications', [ResemeController::class, 'index']);
+    Route::get('/application/{applicationId}', [ResemeController::class, 'show']);
+
 
     Route::get('download-cv/{filename}', function ($filename) {
         $filePath = public_path("storage/cvs/{$filename}");
