@@ -58,13 +58,16 @@ class JobController extends Controller
 
 
     // for show jobs in frontend
-    public function show()
-    {
-        $jobs = Job::with(['jobTypes', 'workLocations', 'company'])->get();
-        return response()->json([
-            'jobs' => $jobs,
-        ], 200);
-    }
+  // for showing jobs in frontend
+public function show()
+{
+    $jobs = Job::with(['jobTypes', 'jobLevels', 'workLocations', 'company'])->get();
+
+    return response()->json([
+        'jobs' => $jobs,
+    ], 200);
+}
+
 
     // Store
 

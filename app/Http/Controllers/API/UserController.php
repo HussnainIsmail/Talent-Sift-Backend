@@ -42,15 +42,18 @@ class UserController extends Controller
 
     public function userLogin(Request $request)
     {
+
+
         // Validate the incoming request
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string|min:6',
         ]);
-
+        // dd($request);
         // Attempt to log in the user
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             $user = Auth::user();
+
             $role = $user->role;
             $roleData = \DB::table('roles')
                 ->where('name', $role)
@@ -89,28 +92,37 @@ class UserController extends Controller
 
     public function register(Request $request)
     {
-        // Validate the input data
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|confirmed|min:6',
+            'user_type' => 'required|in:user,recuriter', 
+            'company_name' => 'nullable|string|max:255|required_if:user_type,recuriter',
         ]);
+
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Create the user
+        $role = $request->user_type;
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => $request->user_type, // Storing 'user' or 'recuriter' as role
+            'company_name' => $request->user_type === 'recuriter' ? $request->company_name : null,
         ]);
 
         Mail::to($user->email)->send(new RegisterMail($user));
 
-        return response()->json(['message' => 'User registered successfully!', 'user' => $user], 201);
+        return response()->json([
+            'message' => 'User registered successfully!',
+            'user' => $user
+        ], 201);
     }
+
 
 
     public function edit($id)
