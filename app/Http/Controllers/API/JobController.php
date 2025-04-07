@@ -56,17 +56,15 @@ class JobController extends Controller
         ]);
     }
 
-
     // for show jobs in frontend
-  // for showing jobs in frontend
-public function show()
-{
-    $jobs = Job::with(['jobTypes', 'jobLevels', 'workLocations', 'company'])->get();
+    public function show()
+    {
+        $jobs = Job::with(['jobTypes', 'jobLevels', 'workLocations', 'company'])->get();
 
-    return response()->json([
-        'jobs' => $jobs,
-    ], 200);
-}
+        return response()->json([
+            'jobs' => $jobs,
+        ], 200);
+    }
 
 
     // Store
