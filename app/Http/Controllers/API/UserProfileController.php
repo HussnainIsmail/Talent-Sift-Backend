@@ -11,24 +11,22 @@ use Illuminate\Support\Facades\Validator;
 class UserProfileController extends Controller
 {
     public function index()
-{
-    $user = auth()->user();
+    {
+        $user = auth()->user();
 
-    if (!$user) {
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
+
+        $profile = $user->profile;
+
         return response()->json([
-            'message' => 'Unauthorized.',
-        ], 401);
+            'user' => $user,
+            'profile' => $profile,
+        ], 200);
     }
-
-    // Eager load the profile relationship
-    $profile = $user->profile;
-
-    return response()->json([
-        'user' => $user,
-        'profile' => $profile,
-    ], 200);
-}
-
 
     public function updateProfile(Request $request)
     {
@@ -48,7 +46,6 @@ class UserProfileController extends Controller
         if ($validator->fails()) {
             return response()->json(['message' => $validator->errors()->first()], 422);
         }
-
         // Find or create the user's profile
         $profile = UserProfile::updateOrCreate(
             ['user_id' => $user->id],
@@ -58,7 +55,6 @@ class UserProfileController extends Controller
                 'degrees' => $request->degrees,
             ]
         );
-
         return response()->json(['message' => 'Profile updated successfully', 'profile' => $profile], 200);
     }
 }

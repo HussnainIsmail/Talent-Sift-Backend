@@ -16,11 +16,11 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('company_name');
-            $table->string('contact_no');
-            $table->string('company_email');
-            $table->date('company_foundation_date');
-            $table->json('services');
-            $table->text('company_location');
+            $table->string('contact_no')->default(null);
+            $table->string('company_email')->default(null);
+            $table->date('company_foundation_date')->default(null);
+            $table->json('services')->default(null);
+            $table->text('company_location')->default(null);
             $table->timestamps();
         });
     }

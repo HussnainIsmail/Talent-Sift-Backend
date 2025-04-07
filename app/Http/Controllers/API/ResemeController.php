@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\JobApplication;
 use App\Mail\InterviewMail;
 use App\Http\Controllers\Controller;
+use Spatie\PdfToImage\Pdf;
+use thiagoalessio\TesseractOCR\TesseractOCR;
 use Illuminate\Http\Request;
 
 class ResemeController extends Controller
@@ -17,15 +19,41 @@ class ResemeController extends Controller
                 'message' => 'Job ID is required.',
             ], 400);
         }
-        // Ensure the user is authenticated
+
         $user = auth()->user();
         if (!$user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
-        // Fetch job applications associated with the provided job ID
+
+        // Fetch job applications
         $jobApplications = JobApplication::where('job_id', $job)->get();
-        // Format response data
+
         $formattedApplications = $jobApplications->map(function ($application) {
+            $cvText = null;
+            $cvImagePath = null;
+
+            // Full path to the PDF (assuming stored in `storage/app/public/cvs`)
+            $pdfPath = storage_path('app/public/' . $application->cv_path);
+
+            if (file_exists($pdfPath)) {
+                try {
+                    // Convert PDF to image
+                    $imagePath = storage_path('app/public/temp/page_' . $application->id . '.jpg');
+                    $pdf = new Pdf($pdfPath);
+                    $pdf->setOutputFormat('jpg')->setResolution(200)->saveImage($imagePath);
+
+                    // Apply OCR on the image
+                    $cvText = (new TesseractOCR($imagePath))->lang('eng')->run();
+
+                    // Optional: Store image path if you want to send it too
+                    $cvImagePath = asset('storage/temp/page_' . $application->id . '.jpg');
+                } catch (\Exception $e) {
+                    $cvText = 'Failed to process CV: ' . $e->getMessage();
+                }
+            } else {
+                $cvText = 'CV not found at ' . $pdfPath;
+            }
+
             return [
                 'id' => $application->id,
                 'first_name' => $application->first_name,
@@ -33,9 +61,10 @@ class ResemeController extends Controller
                 'email' => $application->email,
                 'contact_no' => $application->contact_no,
                 'cv_path' => $application->cv_path,
+                'cv_image_url' => $cvImagePath,
+                'cv_text' => $cvText,
             ];
         });
-
 
         return response()->json([
             'job_applications' => $formattedApplications,

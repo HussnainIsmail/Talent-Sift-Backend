@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API;
 
+use Spatie\PdfToImage\Pdf;
+use thiagoalessio\TesseractOCR\TesseractOCR;
 use App\Http\Controllers\Controller;
 use App\Models\Job;
 use App\Models\JobApplication;
@@ -69,5 +71,24 @@ class JobApplicationController extends Controller
             'message' => 'Job application submitted successfully!',
             'job_application' => $jobApplication,
         ], 201);
+    }
+
+    public function extractTextFromPdf()
+    {
+        $pdfPath = public_path('pdf/sample.pdf');
+        $imagePath = public_path('pdf/page.jpg');
+
+        // Convert first page of PDF to image
+        $pdf = new Pdf($pdfPath);
+        $pdf->setOutputFormat('jpg')->setResolution(300);
+        $pdf->saveImage($imagePath);
+
+        // Apply OCR
+        $text = (new TesseractOCR($imagePath))
+            ->lang('eng') // Set language if needed
+            ->run();
+
+        // Output or return the result
+        return response()->json(['text' => $text]);
     }
 }

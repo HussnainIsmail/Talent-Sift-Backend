@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Company;
 
 use App\Mail\RegisterMail;
 
@@ -42,15 +43,10 @@ class UserController extends Controller
 
     public function userLogin(Request $request)
     {
-
-
-        // Validate the incoming request
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string|min:6',
         ]);
-        // dd($request);
-        // Attempt to log in the user
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             $user = Auth::user();
 
@@ -96,10 +92,17 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|confirmed|min:6',
-            'user_type' => 'required|in:user,recuriter', 
+            'user_type' => 'required|in:candidate,recuriter',
             'company_name' => 'nullable|string|max:255|required_if:user_type,recuriter',
         ]);
 
+        if ($request->user_type === 'recruiter') {
+            // Store company details in the companies table
+            $company = Company::create([
+                'user_id' => $user->id,
+                'company_name' => $request->company_name,
+            ]);
+        }
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
@@ -112,9 +115,19 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->user_type, // Storing 'user' or 'recuriter' as role
-            'company_name' => $request->user_type === 'recuriter' ? $request->company_name : null,
         ]);
-
+        if ($request->user_type === 'recuriter') {
+            // Create company record and link it to the newly created user
+            $company = Company::create([
+                'user_id' => $user->id,
+                'company_name' => $request->company_name,
+                'contact_no' => $request->contact_no ?? null,  // Default to null if not provided
+                'company_email' => $request->company_email ?? null,  // Default to null if not provided
+                'company_foundation_date' => $request->company_foundation_date ?? null,  // Default to null if not provided
+                'services' => $request->services ? json_encode($request->services) : null,  // Default to null if not provided
+                'company_location' => $request->company_location ?? null,  // Default to null if not provided
+            ]);
+        }
         Mail::to($user->email)->send(new RegisterMail($user));
 
         return response()->json([
@@ -163,7 +176,6 @@ class UserController extends Controller
                 'user' => $user
             ], 200);
         } catch (\Exception $e) {
-            // Catch any errors and return a failure response
             return response()->json([
                 'message' => 'Failed to update user.',
                 'error' => $e->getMessage()

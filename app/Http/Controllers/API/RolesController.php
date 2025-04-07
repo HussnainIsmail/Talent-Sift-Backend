@@ -31,7 +31,7 @@ class RolesController extends Controller
         // Validate incoming request
         $validated = $request->validate([
             'name' => 'required|string|unique:roles,name|max:255',
-            'permissions' => 'array', // Validate permissions array
+            'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id', // Ensure each permission ID exists
         ]);
 

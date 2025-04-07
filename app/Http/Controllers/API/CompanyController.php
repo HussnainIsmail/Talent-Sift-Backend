@@ -17,7 +17,7 @@ class CompanyController extends Controller
     public function index(Request $request)
     {
         try {
-            $user = auth()->user(); 
+            $user = auth()->user();
 
             // Retrieve all companies associated with the authenticated user
             $companies = Company::where('user_id', $user->id)->get();
@@ -57,7 +57,7 @@ class CompanyController extends Controller
     {
         $user = $request->user();
         try {
-           
+
             $validatedData = $request->validate([
                 'companyName' => 'required|string|max:255',
                 'contactNo' => 'required|string|max:20',
@@ -68,7 +68,7 @@ class CompanyController extends Controller
                 'location' => 'required|string|max:255',
             ]);
 
-           
+
 
             Company::create([
                 'company_name' => $validatedData['companyName'],
@@ -77,7 +77,7 @@ class CompanyController extends Controller
                 'company_foundation_date' => $validatedData['foundationDate'],
                 'services' => json_encode($validatedData['services']),
                 'company_location' => $validatedData['location'],
-                'user_id' => $user->id, 
+                'user_id' => $user->id,
             ]);
 
             // Return a success response
