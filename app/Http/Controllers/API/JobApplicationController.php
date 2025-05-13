@@ -94,22 +94,5 @@ class JobApplicationController extends Controller
 
 
 
-    public function extractTextFromPdf()
-    {
-        $pdfPath = public_path('pdf/sample.pdf');
-        $imagePath = public_path('pdf/page.jpg');
-
-        // Convert first page of PDF to image
-        $pdf = new Pdf($pdfPath);
-        $pdf->setOutputFormat('jpg')->setResolution(300);
-        $pdf->saveImage($imagePath);
-
-        // Apply OCR
-        $text = (new TesseractOCR($imagePath))
-            ->lang('eng') // Set language if needed
-            ->run();
-
-        // Output or return the result
-        return response()->json(['text' => $text]);
-    }
+   
 }
