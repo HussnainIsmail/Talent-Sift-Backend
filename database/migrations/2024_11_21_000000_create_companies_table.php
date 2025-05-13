@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('companies', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('user_id')->unique();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->string('company_name');
+            $table->string('company_name')->unique();
             $table->string('contact_no')->default(null);
             $table->string('company_email')->default(null);
             $table->date('company_foundation_date')->default(null);

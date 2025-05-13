@@ -7,6 +7,7 @@ use App\Models\Job;
 use App\Models\JobApplication;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use App\Models\Company;
 
@@ -69,10 +70,12 @@ class JobController extends Controller
 
     // Store
 
+
     public function store(Request $request)
     {
         try {
             $user = auth()->user();
+
             // Get the company based on the company name from the request
             $company = Company::where('company_name', $request->company)->first();
 
@@ -82,8 +85,8 @@ class JobController extends Controller
                 ], 403);
             }
 
-            // Validate the job request data
-            $validated = $request->validate([
+            // Create a Validator instance
+            $validator = Validator::make($request->all(), [
                 'jobtitle' => 'required|string|max:255',
                 'email' => 'required|email|max:255',
                 'description' => 'required|string',
@@ -99,6 +102,15 @@ class JobController extends Controller
                 'jobLevel.*' => 'string',
             ]);
 
+            // Check if validation fails
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors(),
+                ]);
+            }
+
+
             // Handle image upload if present
             $imagePath = null;
             if ($request->hasFile('image')) {
@@ -109,49 +121,45 @@ class JobController extends Controller
             $job = Job::create([
                 'user_id' => $user->id,
                 'company_id' => $company->id,  // Use the company_id found by company name
-                'jobtitle' => $validated['jobtitle'],
-                'email' => $validated['email'],
-                'description' => $validated['description'],
-                'subscribe' => $validated['subscribe'] ?? 0,
+                'jobtitle' => $request->jobtitle,
+                'email' => $request->email,
+                'description' => $request->description,
+                'subscribe' => $request->subscribe ?? 0,
                 'image' => $imagePath,
-                'minSalary' => $validated['minSalary'],
-                'maxSalary' => $validated['maxSalary'],
+                'minSalary' => $request->minSalary,
+                'maxSalary' => $request->maxSalary,
             ]);
 
             // Save job types if provided
-            if (!empty($validated['jobType'])) {
-                foreach ($validated['jobType'] as $type) {
+            if (!empty($request->jobType)) {
+                foreach ($request->jobType as $type) {
                     $job->jobTypes()->create(['type' => $type]);
                 }
             }
 
             // Save work locations if provided
-            if (!empty($validated['workLocation'])) {
-                foreach ($validated['workLocation'] as $location) {
+            if (!empty($request->workLocation)) {
+                foreach ($request->workLocation as $location) {
                     $job->workLocations()->create(['location' => $location]);
                 }
             }
 
             // Save job levels if provided
-            if (!empty($validated['jobLevel'])) {
-                foreach ($validated['jobLevel'] as $level) {
+            if (!empty($request->jobLevel)) {
+                foreach ($request->jobLevel as $level) {
                     $job->jobLevels()->create(['level' => $level]);
                 }
             }
 
             // Broadcast the job posting event
-            broadcast(new JobPosted($job));
+            // broadcast(new JobPosted($job));
 
             return response()->json([
                 'message' => 'Job created successfully',
                 'job' => $job->load('jobTypes', 'workLocations', 'jobLevels'),
             ], 201);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'message' => 'Validation error',
-                'errors' => $e->errors(),
-            ], 422);
         } catch (\Exception $e) {
+            // Handle any other exceptions
             return response()->json([
                 'message' => 'An error occurred',
                 'error' => $e->getMessage(),
@@ -166,19 +174,24 @@ class JobController extends Controller
     public function edit($id)
     {
         try {
-            // Find the job by ID along with its related data (jobTypes, jobLevels, workLocations)
-            $job = Job::with(['jobTypes', 'jobLevels', 'workLocations'])->findOrFail($id);
-            // Return the job with its related data
+            // Find the job by ID with its relationships
+            $job = Job::with(['company', 'jobTypes', 'workLocations', 'jobLevels', 'user'])
+                ->findOrFail($id);
+
             return response()->json([
-                'message' => 'Job found successfully',
-                'job' => $job,
+                'message' => 'Job retrieved successfully',
+                'job' => $job
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            // If job with the given ID is not found, return an error response
             return response()->json([
                 'message' => 'Job not found',
-                'error' => 'The job with the provided ID does not exist',
+                'error' => $e->getMessage()
             ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 

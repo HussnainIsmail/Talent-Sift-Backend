@@ -18,13 +18,46 @@ class CompanyController extends Controller
     {
         try {
             $user = auth()->user();
+            $company = $user->company;
 
-            // Retrieve all companies associated with the authenticated user
-            $companies = Company::where('user_id', $user->id)->get();
+            if (!$company) {
+                return response()->json([
+                    'data' => [], // return empty array instead of 404
+                ], 200);
+            }
 
-            // Return a success response with the list of companies
             return response()->json([
-                'data' => $companies,
+                'data' => [$company], // wrap in array
+            ], 200);
+        } catch (\Exception $e) {
+            \Log::error('Unexpected Error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'An unexpected error occurred.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create(Request $request) {
+
+         try {
+            $user = auth()->user();
+    
+            $company = $user->company; 
+    
+            if (!$company) {
+                return response()->json([
+                    'message' => 'No company found for this user.',
+                ], 404);
+            }    
+            return response()->json([
+                'data' => $company,
             ], 200);
         } catch (\Exception $e) {
             // Log unexpected errors
@@ -32,7 +65,7 @@ class CompanyController extends Controller
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-
+    
             // Return a general error response
             return response()->json([
                 'message' => 'An unexpected error occurred.',
@@ -42,68 +75,57 @@ class CompanyController extends Controller
 
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
         $user = $request->user();
-        try {
+        $company = Company::where('user_id', $user->id)->first();
 
+        $companyNameRule = 'required|string|max:255|unique:companies,company_name';
+        $companyEmailRule = 'required|email|max:255|unique:companies,company_email';
+
+        if ($company) {
+            $companyNameRule .= ',' . $company->id;
+            $companyEmailRule .= ',' . $company->id;
+        }
+
+        try {
             $validatedData = $request->validate([
-                'companyName' => 'required|string|max:255',
+                'companyName' => $companyNameRule,
                 'contactNo' => 'required|string|max:20',
-                'companyEmail' => 'required|email|max:255',
+                'companyEmail' => $companyEmailRule,
                 'foundationDate' => 'required|date',
                 'services' => 'required|array',
                 'services.*' => 'required|string',
                 'location' => 'required|string|max:255',
             ]);
 
-
-
-            Company::create([
+            $data = [
                 'company_name' => $validatedData['companyName'],
                 'contact_no' => $validatedData['contactNo'],
                 'company_email' => $validatedData['companyEmail'],
                 'company_foundation_date' => $validatedData['foundationDate'],
                 'services' => json_encode($validatedData['services']),
                 'company_location' => $validatedData['location'],
-                'user_id' => $user->id,
-            ]);
+            ];
 
-            // Return a success response
-            return response()->json([
-                'message' => 'Company created successfully',
-            ], 201);
+            if ($company) {
+                $company->update($data);
+                return response()->json(['message' => 'Company updated successfully']);
+            } else {
+                $data['user_id'] = $user->id;
+                Company::create($data);
+                return response()->json(['message' => 'Company created successfully'], 201);
+            }
         } catch (ValidationException $e) {
-            // Log validation errors
-            \Log::error('Validation Error:', ['errors' => $e->errors()]);
-
-            // Return validation error response
             return response()->json([
                 'message' => 'Validation error',
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            // Log unexpected errors
-            \Log::error('Unexpected Error:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            // Return a general error response
-            return response()->json([
-                'message' => 'An unexpected error occurred.',
-            ], 500);
+            \Log::error('Company store error', ['message' => $e->getMessage()]);
+            return response()->json(['message' => 'Server error'], 500);
         }
     }
 

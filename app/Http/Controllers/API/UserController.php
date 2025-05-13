@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\API;
 
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Company;
+use Illuminate\Support\Facades\Validator;
 
 use App\Mail\RegisterMail;
 
@@ -16,10 +16,33 @@ use Mail;
 
 class UserController extends Controller
 {
+
+
+
+    public function companylist()
+    {
+        try {
+            // Fetch all companies (you can select only 'name' if needed)
+            $companies = Company::all();
+            return response()->json([
+                'data' => $companies,
+            ], 200);
+        } catch (\Exception $e) {
+            \Log::error('Unexpected Error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'An unexpected error occurred.',
+            ], 500);
+        }
+    }
+
+
     public function index()
     {
         $user = auth()->user();
-
         if (!$user) {
             return response()->json([
                 'message' => 'Unauthorized.',
@@ -88,47 +111,49 @@ class UserController extends Controller
 
     public function register(Request $request)
     {
+        // Validate incoming request
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|confirmed|min:6',
             'user_type' => 'required|in:candidate,recuriter',
-            'company_name' => 'nullable|string|max:255|required_if:user_type,recuriter',
+            'company_name' => 'required_if:user_type,recuriter|nullable|string|max:255',
+            'contact_no' => 'nullable|string|max:20',
+            'company_email' => 'nullable|email|max:255',
+            'company_foundation_date' => 'nullable|date',
+            'services' => 'nullable|array',
+            'company_location' => 'nullable|string|max:255',
         ]);
 
-        if ($request->user_type === 'recruiter') {
-            // Store company details in the companies table
-            $company = Company::create([
-                'user_id' => $user->id,
-                'company_name' => $request->company_name,
-            ]);
-        }
-
+        // If validation fails, return errors in JSON
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
         }
 
-        $role = $request->user_type;
-
+        // Create user
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->user_type, // Storing 'user' or 'recuriter' as role
+            'role' => $request->user_type, // Store either 'candidate' or 'recuriter'
         ]);
+
+        // If recruiter, save company data
         if ($request->user_type === 'recuriter') {
-            // Create company record and link it to the newly created user
-            $company = Company::create([
+            Company::create([
                 'user_id' => $user->id,
                 'company_name' => $request->company_name,
-                'contact_no' => $request->contact_no ?? null,  // Default to null if not provided
-                'company_email' => $request->company_email ?? null,  // Default to null if not provided
-                'company_foundation_date' => $request->company_foundation_date ?? null,  // Default to null if not provided
-                'services' => $request->services ? json_encode($request->services) : null,  // Default to null if not provided
-                'company_location' => $request->company_location ?? null,  // Default to null if not provided
+                'contact_no' => $request->contact_no ?? null,
+                'company_email' => $request->company_email ?? null,
+                'company_foundation_date' => $request->company_foundation_date ?? null,
+                'services' => $request->services ? json_encode($request->services) : null,
+                'company_location' => $request->company_location ?? null,
             ]);
         }
-        Mail::to($user->email)->send(new RegisterMail($user));
+
+        // Mail::to($user->email)->send(new RegisterMail($user));
 
         return response()->json([
             'message' => 'User registered successfully!',

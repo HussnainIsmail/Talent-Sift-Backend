@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use Spatie\PdfToImage\Pdf;
 use thiagoalessio\TesseractOCR\TesseractOCR;
 use App\Http\Controllers\Controller;
+use Illuminate\Validation\ValidationException;
 use App\Models\Job;
 use App\Models\JobApplication;
 use Illuminate\Http\Request;
@@ -20,15 +21,20 @@ class JobApplicationController extends Controller
             'job_applications' => $jobApplications
         ]);
     }
+
+    
+
+
     public function store(Request $request)
-    {
+{
+    try {
         // Validate the request data
         $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|unique:job_applications,email',
             'contact_no' => 'required|string|max:15',
-            'cv' => 'required|file|mimes:pdf,doc,docx,mp4,txt|max:4096',  // Allow .mp4 and other types as needed
+            'cv' => 'required|file|mimes:pdf,doc,docx,mp4,txt|max:4096',  
             'job_id' => 'required|exists:jobs,id',
             'company_id' => 'required|exists:companies,id',
         ]);
@@ -41,10 +47,8 @@ class JobApplicationController extends Controller
             Storage::disk('public')->makeDirectory($cvDirectory);
         }
 
-        // Get the original file extension
+        // Get the original file extension and store the file with its original extension
         $fileExtension = $request->file('cv')->getClientOriginalExtension();
-
-        // Store the file with its original extension
         $cvPath = $request->file('cv')->storeAs($cvDirectory, uniqid() . '.' . $fileExtension, 'public');
 
         // Check if the job exists
@@ -71,7 +75,24 @@ class JobApplicationController extends Controller
             'message' => 'Job application submitted successfully!',
             'job_application' => $jobApplication,
         ], 201);
+
+    } catch (ValidationException $e) {
+        // If validation fails, return a custom response with the validation errors
+        return response()->json([
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),  // Display the validation errors
+        ], 422);
+
+    } catch (\Exception $e) {
+        // Catch any other exceptions and return a general error message
+        return response()->json([
+            'message' => 'Something went wrong. Please try again later.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
 
     public function extractTextFromPdf()
     {

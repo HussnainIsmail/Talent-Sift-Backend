@@ -12,9 +12,10 @@ use Illuminate\Http\Request;
 
 class ResemeController extends Controller
 {
-    public function index($job)
-    {
-        if (!$job) {
+    public function index($jobId)
+{
+    try {
+        if (!$jobId) {
             return response()->json([
                 'message' => 'Job ID is required.',
             ], 400);
@@ -25,34 +26,14 @@ class ResemeController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        // Fetch job applications
-        $jobApplications = JobApplication::where('job_id', $job)->get();
+        // Fetch job applications with their job and company relationships
+        $jobApplications = JobApplication::with(['job', 'company'])
+            ->where('job_id', $jobId)
+            ->get();
 
         $formattedApplications = $jobApplications->map(function ($application) {
-            $cvText = null;
-            $cvImagePath = null;
-
-            // Full path to the PDF (assuming stored in `storage/app/public/cvs`)
-            $pdfPath = storage_path('app/public/' . $application->cv_path);
-
-            if (file_exists($pdfPath)) {
-                try {
-                    // Convert PDF to image
-                    $imagePath = storage_path('app/public/temp/page_' . $application->id . '.jpg');
-                    $pdf = new Pdf($pdfPath);
-                    $pdf->setOutputFormat('jpg')->setResolution(200)->saveImage($imagePath);
-
-                    // Apply OCR on the image
-                    $cvText = (new TesseractOCR($imagePath))->lang('eng')->run();
-
-                    // Optional: Store image path if you want to send it too
-                    $cvImagePath = asset('storage/temp/page_' . $application->id . '.jpg');
-                } catch (\Exception $e) {
-                    $cvText = 'Failed to process CV: ' . $e->getMessage();
-                }
-            } else {
-                $cvText = 'CV not found at ' . $pdfPath;
-            }
+            // Generate the public URL for the CV file
+            $cv_path = basename($application->cv_path);
 
             return [
                 'id' => $application->id,
@@ -60,17 +41,28 @@ class ResemeController extends Controller
                 'last_name' => $application->last_name,
                 'email' => $application->email,
                 'contact_no' => $application->contact_no,
-                'cv_path' => $application->cv_path,
-                'cv_image_url' => $cvImagePath,
-                'cv_text' => $cvText,
+                'cv_path' => $cv_path,
+                'job_title' => $application->job->title ?? null,
+                'company_name' => $application->company->name ?? null,
+                'created_at' => $application->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $application->updated_at->format('Y-m-d H:i:s'),
             ];
         });
 
         return response()->json([
             'job_applications' => $formattedApplications,
-            'job_id' => $job,
+            'job_id' => $jobId,
+            'count' => $jobApplications->count(),
         ]);
+
+    } catch (\Exception $e) {
+        \Log::error("Job applications index error: " . $e->getMessage());
+        return response()->json([
+            'message' => 'Failed to retrieve job applications',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     // show the detail for the email
     public function show($applicationId)
