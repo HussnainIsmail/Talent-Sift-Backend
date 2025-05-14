@@ -55,6 +55,7 @@ Route::middleware(['auth:api', 'role:recuriter'])->group(function () {
         }
         return response()->json(['message' => 'File not found'], 404);
     });
+    Route::get('/application/{applicationId}', [ResemeController::class, 'show']);
     Route::post('/send/interview-email/{applicationId}', [ResemeController::class, 'sendInterviewEmail']);
 });
 Route::middleware('auth:api')->get('user/profile', [UserProfileController::class, 'index']);
@@ -93,7 +94,6 @@ Route::middleware('auth:api', 'role:user')->group(function () {
     Route::get('logout', [UserController::class, 'userLogout']);
 
     // Route::get('jobs/{job}/applications', [JobController::class, 'index']);
-    Route::get('/application/{applicationId}', [ResemeController::class, 'show']);
 });
 
 
