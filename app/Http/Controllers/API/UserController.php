@@ -4,15 +4,18 @@ namespace App\Http\Controllers\API;
 
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
+use App\Mail\ForgotPasswordMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Company;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+
 
 use App\Mail\RegisterMail;
 
-use Mail;
 
 class UserController extends Controller
 {
@@ -224,5 +227,72 @@ class UserController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Logged out successfully.'], 200);
+    }
+
+
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        // Generate OTP
+        $otp = Str::random(6);  // Generate a 6-digit OTP
+
+        // Retrieve user by email
+        $user = User::where('email', $request->email)->first();
+
+        // Store OTP in the user's record
+        $user->otp = $otp;
+        $user->save();
+
+        // Send OTP via Mailtrap email
+        Mail::to($user->email)->send(new ForgotPasswordMail($user, $otp));
+
+        return response()->json(['message' => 'OTP sent successfully.'], 200);
+    }
+
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        if ($user->otp !== $request->otp) {
+            return response()->json(['message' => 'Invalid OTP'], 400);
+        }
+
+        // Optionally, clear OTP after verification
+        $user->otp = null;
+        $user->save();
+
+        return response()->json(['message' => 'OTP verified successfully']);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $user->password = bcrypt($request->password);
+        $user->save();
+
+        return response()->json(['message' => 'Password reset successful']);
     }
 }

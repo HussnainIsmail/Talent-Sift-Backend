@@ -18,7 +18,11 @@ class CreateUserProfilesTable extends Migration
             $table->unsignedBigInteger('user_id')->unique(); // Foreign key to users table
             $table->string('profession')->nullable();
             $table->string('address')->nullable();
-            $table->json('degrees')->nullable(); // Store degrees as JSON
+            $table->json('degrees')->nullable();
+            // enhance profile
+            $table->string('enhance_profile_profession')->nullable();
+            $table->json('enhance_profile_skills')->nullable();
+            $table->text('enhance_profile_experience')->nullable();
             $table->timestamps();
 
             // Foreign key constraint

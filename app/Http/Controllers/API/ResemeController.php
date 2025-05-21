@@ -6,64 +6,80 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\JobApplication;
 use App\Mail\InterviewMail;
 use App\Http\Controllers\Controller;
-use Spatie\PdfToImage\Pdf;
+use Smalot\PdfParser\Parser;
 use thiagoalessio\TesseractOCR\TesseractOCR;
 use Illuminate\Http\Request;
 
 class ResemeController extends Controller
 {
     public function index($jobId)
-{
-    try {
-        if (!$jobId) {
+    {
+        try {
+            if (!$jobId) {
+                return response()->json([
+                    'message' => 'Job ID is required.',
+                ], 400);
+            }
+
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+
+            $jobApplications = JobApplication::with(['job', 'company'])
+                ->where('job_id', $jobId)
+                ->get();
+
+            $parser = new Parser(); // Initialize parser
+
+            $formattedApplications = $jobApplications->map(function ($application) use ($parser) {
+                $cv_path = basename($application->cv_path);
+
+                // Correct file path (no extra /storage)
+                $fullPdfPath = storage_path('app/public/cvs/' . $cv_path);
+
+
+                $cv_text = null;
+                if (file_exists($fullPdfPath)) {
+                    try {
+                        $pdf = $parser->parseFile($fullPdfPath);
+                        $cv_text = $pdf->getText();
+                    } catch (\Exception $e) {
+                        \Log::warning("PDF parse error for file {$cv_path}: " . $e->getMessage());
+                        $cv_text = 'Failed to parse PDF.';
+                    }
+                } else {
+                    $cv_text = 'PDF file not found.';
+                }
+
+                return [
+                    'id' => $application->id,
+                    'first_name' => $application->first_name,
+                    'last_name' => $application->last_name,
+                    'email' => $application->email,
+                    'contact_no' => $application->contact_no,
+                    'cv_path' => $cv_path,
+                    'cv_content' => $cv_text, // Include parsed content
+                    'job_title' => $application->job->title ?? null,
+                    'company_name' => $application->company->name ?? null,
+                    'created_at' => $application->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $application->updated_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
             return response()->json([
-                'message' => 'Job ID is required.',
-            ], 400);
+                'job_applications' => $formattedApplications,
+                'job_id' => $jobId,
+                'count' => $jobApplications->count(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Job applications index error: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to retrieve job applications',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $user = auth()->user();
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-
-        // Fetch job applications with their job and company relationships
-        $jobApplications = JobApplication::with(['job', 'company'])
-            ->where('job_id', $jobId)
-            ->get();
-
-        $formattedApplications = $jobApplications->map(function ($application) {
-            // Generate the public URL for the CV file
-            $cv_path = basename($application->cv_path);
-
-            return [
-                'id' => $application->id,
-                'first_name' => $application->first_name,
-                'last_name' => $application->last_name,
-                'email' => $application->email,
-                'contact_no' => $application->contact_no,
-                'cv_path' => $cv_path,
-                'job_title' => $application->job->title ?? null,
-                'company_name' => $application->company->name ?? null,
-                'created_at' => $application->created_at->format('Y-m-d H:i:s'),
-                'updated_at' => $application->updated_at->format('Y-m-d H:i:s'),
-            ];
-        });
-
-        return response()->json([
-            'job_applications' => $formattedApplications,
-            'job_id' => $jobId,
-            'count' => $jobApplications->count(),
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error("Job applications index error: " . $e->getMessage());
-        return response()->json([
-            'message' => 'Failed to retrieve job applications',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
-
     // show the detail for the email
     public function show($applicationId)
     {

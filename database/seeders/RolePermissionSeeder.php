@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
@@ -17,11 +16,7 @@ class RolePermissionSeeder extends Seeder
     {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-
-        // Truncate tables that are referenced by foreign key constraints
         Permission::truncate();
-
-        // Enable foreign key checks again
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // Create Permissions
@@ -40,7 +35,7 @@ class RolePermissionSeeder extends Seeder
             'show-permissions',
             'register-company',
             'show-companies',
-            'show-resumes'
+            'show-resumes',
         ];
 
         foreach ($permissions as $permission) {
@@ -48,17 +43,36 @@ class RolePermissionSeeder extends Seeder
         }
 
         // Create Roles
-        $superadmin = Role::create(['name' => 'super-admin']);
         $admin = Role::create(['name' => 'admin']);
-        $user = Role::create(['name' => 'user']);
+        $recruiter = Role::create(['name' => 'recruiter']);
+        $user = Role::create(['name' => 'candidate']);
 
-        // Assign Permissions to Roles
-        $superadmin->givePermissionTo($permissions);
+        // Assign Permissions
         $admin->givePermissionTo([
-            'create-job', 'edit-job', 'delete-job', 'show-users', 'edit-user',
-            'create-role', 'edit-role', 'show-roles', 'create-permission', 'edit-permission',
-            'show-permissions'
+            'create-job',
+            'edit-job',
+            'delete-job',
+            'show-users',
+            'edit-user',
+            'create-role',
+            'edit-role',
+            'show-roles',
+            'create-permission',
+            'edit-permission',
+            'show-permissions',
+            'show-companies',
+            'show-resumes'
         ]);
+
+        $recruiter->givePermissionTo([
+            'create-job',
+            'edit-job',
+            'delete-job',
+            'register-company',
+            'show-companies',
+            'show-resumes'
+        ]);
+
         $user->givePermissionTo([
             'apply-job'
         ]);

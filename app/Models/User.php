@@ -23,6 +23,10 @@ class User extends Authenticatable
         'role',
         'email',
         'password',
+        'otp',
+        'profession',
+        'skills',
+        'experience'
     ];
     public function jobs()
     {

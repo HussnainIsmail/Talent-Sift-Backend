@@ -14,6 +14,9 @@ class UserProfile extends Model
         'profession',
         'address',
         'degrees',
+        'enhance_profile_profession',
+        'enhance_profile_skills',
+        'enhance_profile_experience'
     ];
 
     protected $casts = [

@@ -85,7 +85,7 @@ class JobController extends Controller
                 ], 403);
             }
 
-            // Create a Validator instance
+            // Validation
             $validator = Validator::make($request->all(), [
                 'jobtitle' => 'required|string|max:255',
                 'email' => 'required|email|max:255',
@@ -94,15 +94,16 @@ class JobController extends Controller
                 'jobType.*' => 'string',
                 'workLocation' => 'nullable|array',
                 'workLocation.*' => 'string',
+                'jobLevel' => 'nullable|array',
+                'jobLevel.*' => 'string',
                 'subscribe' => 'nullable|boolean',
                 'image' => 'nullable|image|max:10240',
                 'minSalary' => 'required|numeric|min:0',
                 'maxSalary' => 'required|numeric|min:0|gte:minSalary',
-                'jobLevel' => 'nullable|array',
-                'jobLevel.*' => 'string',
+                'skills' => 'nullable|string',
+                'experience' => 'nullable|string|max:255',
             ]);
 
-            // Check if validation fails
             if ($validator->fails()) {
                 return response()->json([
                     'message' => 'Validation error',
@@ -110,17 +111,22 @@ class JobController extends Controller
                 ]);
             }
 
-
-            // Handle image upload if present
+            // Handle image upload
             $imagePath = null;
             if ($request->hasFile('image')) {
                 $imagePath = $request->file('image')->store('job_images', 'public');
             }
 
-            // Create the job record with the company_id
+            // Parse skills into array
+            $skillsArray = [];
+            if (!empty($request->skills)) {
+                $skillsArray = array_map('trim', explode(',', $request->skills));
+            }
+
+            // Create the job record
             $job = Job::create([
                 'user_id' => $user->id,
-                'company_id' => $company->id,  // Use the company_id found by company name
+                'company_id' => $company->id,
                 'jobtitle' => $request->jobtitle,
                 'email' => $request->email,
                 'description' => $request->description,
@@ -128,44 +134,43 @@ class JobController extends Controller
                 'image' => $imagePath,
                 'minSalary' => $request->minSalary,
                 'maxSalary' => $request->maxSalary,
+                'experience' => $request->experience,
+                'skills' => json_encode($skillsArray), // <-- force JSON here
             ]);
 
-            // Save job types if provided
+            // Save related jobTypes
             if (!empty($request->jobType)) {
                 foreach ($request->jobType as $type) {
                     $job->jobTypes()->create(['type' => $type]);
                 }
             }
 
-            // Save work locations if provided
+            // Save related workLocations
             if (!empty($request->workLocation)) {
                 foreach ($request->workLocation as $location) {
                     $job->workLocations()->create(['location' => $location]);
                 }
             }
 
-            // Save job levels if provided
+            // Save related jobLevels
             if (!empty($request->jobLevel)) {
                 foreach ($request->jobLevel as $level) {
                     $job->jobLevels()->create(['level' => $level]);
                 }
             }
 
-            // Broadcast the job posting event
-            // broadcast(new JobPosted($job));
-
             return response()->json([
                 'message' => 'Job created successfully',
                 'job' => $job->load('jobTypes', 'workLocations', 'jobLevels'),
             ], 201);
         } catch (\Exception $e) {
-            // Handle any other exceptions
             return response()->json([
                 'message' => 'An error occurred',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
+
 
 
     /**

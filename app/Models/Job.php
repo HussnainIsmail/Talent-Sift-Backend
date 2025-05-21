@@ -19,6 +19,8 @@ class Job extends Model
         'image',
         'minSalary',
         'maxSalary',
+        'skills',
+        'experience',
     ];
 
     public function jobTypes()

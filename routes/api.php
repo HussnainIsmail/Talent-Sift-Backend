@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\API\EnhanceUserProfileController;
 use App\Http\Controllers\API\JobApplicationController;
 use App\Http\Controllers\API\PermissionController;
 use App\Http\Controllers\API\RolesController;
@@ -31,6 +32,9 @@ use Illuminate\Support\Facades\Storage;
 Route::controller(UserController::class)->group(function () {
     Route::post('login', 'userLogin');
     Route::post('register', 'register');
+    Route::post('/forgot-password', [UserController::class, 'forgotPassword']);
+    Route::post('/verify-otp', [UserController::class, 'verifyOtp']);
+    Route::post('/reset-password', [UserController::class, 'resetPassword']);
 });
 
 // for job list in admin panel job
@@ -60,6 +64,8 @@ Route::middleware(['auth:api', 'role:recuriter'])->group(function () {
 });
 Route::middleware('auth:api')->get('user/profile', [UserProfileController::class, 'index']);
 Route::middleware('auth:api')->post('user/update-profile/{id}', [UserProfileController::class, 'updateProfile']);
+Route::middleware('auth:api')->post('user/enhance-profile', [EnhanceUserProfileController::class, 'enhanceProfile']);
+Route::middleware('auth:api')->get('/user/enhance-profile', [EnhanceUserProfileController::class, 'getEnhancedProfile']);
 
 
 
