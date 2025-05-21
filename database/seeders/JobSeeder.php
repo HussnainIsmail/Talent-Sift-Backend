@@ -19,7 +19,7 @@ class JobSeeder extends Seeder
             'jobtitle' => 'Software Engineer',
             'email' => 'softwareengineer@example.com',
             'description' => 'A software engineer responsible for building and maintaining applications.',
-            'jobType' => json_encode(['full-time', 'part-time']),// Example of job types as an array
+            // 'jobType' => json_encode(['full-time', 'part-time']),// Example of job types as an array
             'workLocation' => json_encode(['remote']),  // Example of work location as an array
             'subscribe' => true, // Subscribe status as true
             'image' => null, // No image for this example

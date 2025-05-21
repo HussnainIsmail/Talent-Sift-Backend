@@ -15,11 +15,11 @@ class UserProfileController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user) {
-            return response()->json([
-                'message' => 'Unauthorized.',
-            ], 401);
-        }
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Unauthorized.',
+                ], 401);
+            }
 
         $profile = $user->profile;
 

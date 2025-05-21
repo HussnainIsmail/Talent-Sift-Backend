@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\UserProfile;
+use Illuminate\Support\Facades\Auth;
 use App\Events\JobPosted; // Import the event
 use App\Models\Job;
 use App\Models\JobApplication;
@@ -62,6 +64,53 @@ class JobController extends Controller
     {
         $jobs = Job::with(['jobTypes', 'jobLevels', 'workLocations', 'company'])->get();
 
+        if (Auth::check()) {
+            $userId = Auth::id();
+
+            $userProfile = UserProfile::where('user_id', $userId)
+                ->select('enhance_profile_skills')
+                ->first();
+
+            $userSkills = json_decode($userProfile->enhance_profile_skills ?? '[]', true);
+
+            if (!empty($userSkills)) {
+                $lowerUserSkills = array_map('mb_strtolower', $userSkills);
+
+                foreach ($jobs as $job) {
+                    $jobSkills = json_decode($job->skills ?? '[]', true);
+                    $job->skills = $jobSkills;
+
+                    $lowerJobSkills = array_map('mb_strtolower', $jobSkills);
+
+                    // Count how many user skills match job skills (case-insensitive)
+                    $job->matching_skills_count = count(array_intersect($lowerUserSkills, $lowerJobSkills));
+                }
+
+                // Sort jobs based on how many skills matched (descending)
+                $jobs = $jobs->sortByDesc('matching_skills_count')->values();
+            } else {
+                foreach ($jobs as $job) {
+                    $job->skills = json_decode($job->skills ?? '[]', true);
+                }
+            }
+        } else {
+            foreach ($jobs as $job) {
+                $job->skills = json_decode($job->skills ?? '[]', true);
+            }
+        }
+
+        return response()->json([
+            'jobs' => $jobs,
+        ], 200);
+    }
+
+
+
+    public function showJobDetail()
+    {
+
+        $jobs = Job::with(['jobTypes', 'jobLevels', 'workLocations', 'company'])->get();
+
         return response()->json([
             'jobs' => $jobs,
         ], 200);
@@ -100,8 +149,7 @@ class JobController extends Controller
                 'image' => 'nullable|image|max:10240',
                 'minSalary' => 'required|numeric|min:0',
                 'maxSalary' => 'required|numeric|min:0|gte:minSalary',
-                'skills' => 'nullable|string',
-                'experience' => 'nullable|string|max:255',
+
             ]);
 
             if ($validator->fails()) {
@@ -135,7 +183,7 @@ class JobController extends Controller
                 'minSalary' => $request->minSalary,
                 'maxSalary' => $request->maxSalary,
                 'experience' => $request->experience,
-                'skills' => json_encode($skillsArray), // <-- force JSON here
+                'skills' => json_encode($skillsArray),
             ]);
 
             // Save related jobTypes
@@ -170,8 +218,6 @@ class JobController extends Controller
             ], 500);
         }
     }
-
-
 
     /**
      * Show the form for creating a new resource.

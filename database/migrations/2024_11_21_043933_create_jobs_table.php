@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+
 class CreateJobsTable extends Migration
 {
     public function up()
@@ -14,7 +15,7 @@ class CreateJobsTable extends Migration
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->string('jobtitle');
-              $table->json('skills')->nullable(); // comma-separated string
+            $table->json('skills')->nullable();
             $table->string('experience')->nullable();
             $table->string('email');
             $table->text('description');

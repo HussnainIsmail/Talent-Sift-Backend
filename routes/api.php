@@ -39,7 +39,7 @@ Route::controller(UserController::class)->group(function () {
 
 // for job list in admin panel job
 Route::get('/job/edit/{id}', [JobController::class, 'edit']);
-Route::get('jobs/show', [JobController::class, 'show']);
+Route::get('jobs/detail/show', [JobController::class, 'showJobDetail']);
 
 
 Route::middleware(['auth:api', 'role:recuriter'])->group(function () {
@@ -66,6 +66,7 @@ Route::middleware('auth:api')->get('user/profile', [UserProfileController::class
 Route::middleware('auth:api')->post('user/update-profile/{id}', [UserProfileController::class, 'updateProfile']);
 Route::middleware('auth:api')->post('user/enhance-profile', [EnhanceUserProfileController::class, 'enhanceProfile']);
 Route::middleware('auth:api')->get('/user/enhance-profile', [EnhanceUserProfileController::class, 'getEnhancedProfile']);
+Route::middleware('auth:api')->get('jobs/show', [JobController::class, 'show']);
 
 
 

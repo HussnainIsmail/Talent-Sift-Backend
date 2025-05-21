@@ -13,7 +13,7 @@ class CompaniesTableSeeder extends Seeder
     {
         $companies = [
             [
-                'user_id' => 19,
+                'user_id' => 6,
                 'company_name' => 'Tech Vision Ltd.',
                 'contact_no' => '03001234567',
                 'company_email' => 'info@techvision.com',
@@ -24,7 +24,7 @@ class CompaniesTableSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'user_id' => 20,
+                'user_id' => 7,
                 'company_name' => 'Creative Minds Inc.',
                 'contact_no' => '03111234567',
                 'company_email' => 'hello@creativeminds.com',
@@ -35,7 +35,7 @@ class CompaniesTableSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'user_id' => 21,
+                'user_id' => 8,
                 'company_name' => 'NextGen Solutions',
                 'contact_no' => '03221234567',
                 'company_email' => 'contact@nextgensolutions.com',
@@ -46,7 +46,7 @@ class CompaniesTableSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'user_id' => 22,
+                'user_id' => 9,
                 'company_name' => 'BizWare Systems',
                 'contact_no' => '03451234567',
                 'company_email' => 'support@bizware.com',
@@ -57,7 +57,7 @@ class CompaniesTableSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'user_id' => 23,
+                'user_id' => 10,
                 'company_name' => 'Elite Softwares',
                 'contact_no' => '03561234567',
                 'company_email' => 'elite@softwares.com',
